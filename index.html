@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CTL48 Admin v21 (Status Fixed)</title>
+  <title>CTL48 Admin v25 (Auto-Reload)</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -24,7 +24,7 @@
     input, select, textarea {
       width:100%; padding:12px; border:1px solid #ddd; border-radius:10px;
       background:#fff; font-size:1rem; transition:.2s; color:#333;
-      appearance: none; -webkit-appearance: none; /* Garante visual nativo limpo */
+      appearance: none; -webkit-appearance: none;
     }
     textarea { resize:vertical; }
 
@@ -73,13 +73,21 @@
 
     /* Formation rendering */
     .slots-container { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; padding:18px; border:2px dashed #ddd; margin-top:15px; border-radius:12px; background:#fafafa; }
-    .rows-wrap{ display:flex; flex-direction:column; gap:14px; }
+    .rows-wrap{ display:flex; flex-direction:column; gap:14px; width: 100%; }
     .slots-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
 
     .slot { width:74px; text-align:center; position:relative; cursor:pointer; transition:transform .2s; }
     .slot:active { transform:scale(.92); }
     .slot-circle { width:64px; height:64px; border-radius:50%; background:white; border:2px solid #ddd; display:flex; justify-content:center; align-items:center; margin:0 auto; overflow:hidden; transition:.2s; position:relative; }
-    .slot.is-center .slot-circle { border-color:#e91e63; z-index:2; box-shadow:0 0 0 3px rgba(233,30,99,.15); }
+    
+    /* Visual de Center ATIVO */
+    .slot.is-center .slot-circle { 
+        border-color: #e91e63; 
+        z-index: 2; 
+        box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.25); /* Borda mais visível */
+        transform: scale(1.05);
+    }
+    
     .slot-badge { position:absolute; bottom:18px; right:2px; background:#333; color:white; width:20px; height:20px; font-size:.65rem; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:5; border:2px solid white; font-weight:900; }
     .slot.is-center .slot-badge { background:#e91e63; }
     .slot img { width:100%; height:100%; object-fit:cover; }
@@ -103,7 +111,7 @@
 </head>
 <body>
 
-  <div class="header">CTL48 Admin v21</div>
+  <div class="header">CTL48 Admin v25</div>
 
   <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
@@ -128,6 +136,9 @@
   <div id="tab-disco" class="section active">
     <div class="card">
       <h2>💿 Discografia</h2>
+      <div style="background:#fff0f5; color:#c2185b; padding:10px; border-radius:8px; font-size:0.8rem; margin-bottom:15px; border:1px solid #f8bbd0;">
+        💡 Ao salvar, o sistema atualizará todos os membros e <b>recarregará a página</b>.
+      </div>
       <form onsubmit="saveDisco(event)">
         <label>Título</label><input id="d-title" required placeholder="Ex: 10th Single">
         <div style="display:flex; gap:10px;">
@@ -192,6 +203,8 @@
           <button type="button" class="btn-upload" onclick="document.getElementById('m-photo-file').click()"><i class="fas fa-upload"></i></button>
         </div>
         <div id="m-upload-status" class="upload-status"></div>
+        <label>Biografia</label>
+        <textarea id="m-bio" rows="4" placeholder="Escreva a biografia da integrante..."></textarea>
 
         <button class="btn-main">Cadastrar</button>
       </form>
@@ -233,6 +246,21 @@
             <button type="button" class="btn-upload" onclick="document.getElementById('e-photo-file').click()"><i class="fas fa-upload"></i></button>
           </div>
           <div id="e-upload-status" class="upload-status"></div>
+          
+          <label>Biografia</label>
+          <textarea id="e-bio" rows="5" placeholder="Escreva a biografia..."></textarea>
+
+          <label>Galeria (URLs, 1 por linha)</label>
+          <textarea id="e-gallery" rows="5" placeholder="https://...&#10;https://..."></textarea>
+
+          <label>Upload Fotos (galeria)</label>
+          <div class="input-group">
+            <input type="file" id="e-gallery-files" hidden accept="image/*" multiple onchange="uploadGalleryFiles(this)">
+            <button type="button" class="btn-upload" onclick="document.getElementById('e-gallery-files').click()">
+              <i class="fas fa-images"></i>
+            </button>
+          </div>
+          <div id="e-gallery-status" class="upload-status"></div>
 
           <label>Participações (JSON)</label>
           <textarea id="e-part" rows="3"></textarea>
@@ -253,7 +281,9 @@
 
       <div id="disco-edit-form" style="display:none; margin-top:15px;">
         <form onsubmit="updateDisco(event)">
-          <label>Título</label><input id="ed-title" required>
+          <label>Título</label><input id="ed-title" required readonly style="background:#eee; color:#777;">
+          <div style="font-size:0.75rem; color:#e91e63; margin-bottom:10px;">* Título não pode ser alterado para garantir a integridade do histórico.</div>
+          
           <div style="display:flex; gap:10px;">
             <div style="flex:1"><label>Tipo</label><select id="ed-type"><option>Single</option><option>Album</option><option>Stage</option></select></div>
             <div style="flex:1"><label>Data</label><input type="date" id="ed-date" required></div>
@@ -270,7 +300,11 @@
           <label>Tracklist HTML</label><textarea id="ed-tracklist" rows="6"></textarea>
           <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
         </form>
-        <button class="btn-main" style="background:#f44336;" onclick="deleteDisco()">Deletar Disco</button>
+        <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+            <p style="color:#f44336; font-weight:bold; font-size:0.9rem;">Zona de Perigo</p>
+            <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Ao deletar este disco, ele será removido do histórico de todos os membros.</p>
+            <button class="btn-main" style="background:#f44336; margin-top:0;" onclick="deleteDisco()">Deletar Disco (Cascade)</button>
+        </div>
       </div>
     </div>
   </div>
@@ -361,7 +395,7 @@
       el.classList.add('active');
     }
 
-    // === API (com typecast: true para evitar erros de status) ===
+    // === API ===
     async function api(table, method, body, id = null) {
       const tName = table.startsWith('tbl') ? table : encodeURIComponent(table);
       const url = `https://api.airtable.com/v0/${BASE_ID}/${tName}${id ? '/' + id : ''}`;
@@ -370,7 +404,7 @@
         headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
       };
       if (body) {
-        body.typecast = true; // Permite criar/aceitar opções novas (importante para Status)
+        body.typecast = true; 
         opts.body = JSON.stringify(body);
       }
       return fetch(url, opts);
@@ -419,7 +453,7 @@
           photo: x.fields?.Foto?.[0]?.url || '',
           team: x.fields?.Time || '',
           gen: x.fields?.Geracao || '',
-          status: x.fields?.Status || 'Ativa', // Garante valor padrão
+          status: x.fields?.Status || 'Ativa', 
           part: x.fields?.Participacoes || ''
         }));
 
@@ -471,26 +505,65 @@
       } catch (err) { console.error(err); }
     }
 
-    // === FORMS ===
-    function fillEditForm(){
-      const id = val('manage-selector');
-      const box = $('edit-form');
-      if(!id){ box.style.display='none'; return; }
-      const m = allMembers.find(x=>x.id===id);
-      if(!m){ box.style.display='none'; return; }
+    async function uploadGalleryFiles(input) {
+      const files = Array.from(input.files || []);
+      const statusEl = $('e-gallery-status');
+      const box = $('e-gallery');
+      if (!files.length) return;
+      if (statusEl) statusEl.innerText = `⏳ Enviando ${files.length}...`;
+      try {
+        const urls = [];
+        for (const file of files) {
+          const base64 = await new Promise((resolve, reject) => {
+            const r = new FileReader();
+            r.onload = () => resolve(r.result);
+            r.onerror = reject;
+            r.readAsDataURL(file);
+          });
+          const imageOnly = String(base64).split(",")[1];
+          const form = new URLSearchParams();
+          form.append("key", IMGBB_KEY);
+          form.append("image", imageOnly);
+          const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: form });
+          const data = await res.json();
+          if (!data?.success) throw new Error(data?.error?.message || "Erro no upload");
+          urls.push(data.data.url);
+          await sleep(150);
+        }
+        const current = (box.value || "").trim();
+        const merged = current ? (current + "\n" + urls.join("\n")) : urls.join("\n");
+        box.value = merged;
+        if (statusEl) statusEl.innerText = "✅ Galeria atualizada!";
+      } catch (e) {
+        console.error(e);
+        if (statusEl) statusEl.innerText = "❌ Erro: " + e.message;
+      }
+    }
 
-      $('e-name').value = m.name;
-      $('e-team').value = m.team || "Team C";
-      $('e-gen').value = (m.gen || '').replace('ª Geração','').trim();
-      
-      // Define o status e garante que o select mostre a opção correta
-      $('e-status-select').value = m.status;
-      
-      $('e-photo').value = m.photo || '';
-      $('e-preview').src = m.photo || 'https://placehold.co/100';
-      $('e-part').value = m.part || '';
-      $('e-upload-status').innerText = "";
-      box.style.display='block';
+    // === FORMS ===
+    async function fillEditForm() {
+      const id = val('manage-selector');
+      const f = $('edit-form');
+      if (!id) { if (f) f.style.display = 'none'; return; }
+      const res = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${id}`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}` }
+      });
+      const data = await res.json();
+      const fields = data.fields || {};
+      $('e-name').value = fields.Nome || '';
+      $('e-status-select').value = fields.Status || 'Ativa';
+      $('e-team').value = fields.Time || 'Team C';
+      $('e-gen').value = (fields.Geracao || '').replace('ª Geração','').trim();
+      const photoUrl = (fields.Foto && fields.Foto[0] && fields.Foto[0].url) ? fields.Foto[0].url : '';
+      $('e-photo').value = photoUrl;
+      if ($('e-preview')) $('e-preview').src = photoUrl || 'https://placehold.co/100';
+      if ($('e-bio')) $('e-bio').value = fields.Perfil || '';
+      const galUrls = Array.isArray(fields.Galeria) ? fields.Galeria.map(x => x.url).filter(Boolean) : [];
+      if ($('e-gallery')) $('e-gallery').value = galUrls.join('\n');
+      $('e-part').value = fields.Participacoes || '';
+      if ($('e-upload-status')) $('e-upload-status').innerText = "";
+      if ($('e-gallery-status')) $('e-gallery-status').innerText = "";
+      if (f) f.style.display = 'block';
     }
 
     function fillDiscoEditForm() {
@@ -512,57 +585,106 @@
     }
 
     // === ACTIONS ===
-    async function saveMember(e){
+    async function saveMember(e) {
       e.preventDefault();
-      const genStr = `${val('m-gen')}ª Geração`;
-      const r = await api(T_MEMBERS, 'POST', { fields:{
+      const genNum = val('m-gen');
+      const genStr = genNum + "ª Geração";
+      const fields = {
         "Nome": val('m-name'),
         "Time": val('m-team'),
         "Geracao": genStr,
         "Status": val('m-status-select'),
-        "Foto": [{ url: val('m-photo') }]
-      }});
-      if(r.ok){ alert('Membro Salvo!'); e.target.reset(); $('m-upload-status').innerText = ""; loadMembers(); } 
-      else { alert('Erro ao salvar membro.'); }
+        "Foto": val('m-photo') ? [{ url: val('m-photo') }] : [],
+        "Perfil": val('m-bio') || ""
+      };
+      const ok = await api(T_MEMBERS, 'POST', { fields });
+      if (ok.ok) {
+        alert('Membro cadastrado!');
+        e.target.reset();
+        document.getElementById('m-upload-status').innerText = "";
+        location.reload();
+      } else { alert("Erro ao salvar membro."); }
     }
 
-    async function updateMember(e){
+    async function updateMember(e) {
       e.preventDefault();
       const id = val('manage-selector');
-      if(!id) return;
-      const genStr = `${val('e-gen')}ª Geração`;
-      const r = await api(T_MEMBERS, 'PATCH', { fields:{
+      if (!id) return;
+      const galleryLines = (val('e-gallery') || '').split('\n').map(s => s.trim()).filter(Boolean);
+      const genStr = val('e-gen') + "ª Geração";
+      const fields = {
         "Nome": val('e-name'),
         "Time": val('e-team'),
         "Geracao": genStr,
         "Status": val('e-status-select'),
-        "Foto": [{ url: val('e-photo') }],
-        "Participacoes": val('e-part')
-      }}, id);
-      if(r.ok){ alert('Atualizado!'); loadMembers(); }
+        "Foto": val('e-photo') ? [{ "url": val('e-photo') }] : [],
+        "Perfil": val('e-bio') || '',
+        "Galeria": galleryLines.map(url => ({ url })),
+        "Participacoes": val('e-part') || ''
+      };
+      const ok = await api(T_MEMBERS, 'PATCH', { fields }, id);
+      if (ok.ok) { alert('Atualizado!'); location.reload(); } 
       else { alert('Erro ao atualizar.'); }
     }
 
     async function saveNews(e){
       e.preventDefault();
       const r = await api(T_NEWS, 'POST', { fields:{ "Titulo": val('n-title'), "Categoria": val('n-cat'), "Data": val('n-date'), "Texto": val('n-text') }});
-      if(r.ok){ alert('Notícia Salva!'); e.target.reset(); } else { alert('Erro.'); }
+      if(r.ok){ alert('Notícia Salva!'); e.target.reset(); location.reload(); } else { alert('Erro.'); }
     }
 
+    // === SAVE DISCOGRAFIA (GERANDO O HTML BONITO) ===
     async function saveDisco(e) {
       e.preventDefault();
       if (!tracksBuffer || tracksBuffer.length === 0) { alert('Adicione músicas!'); return; }
       showLoading(true, "Salvando Discografia...");
+      
       try {
+        // --- 1. Gera o HTML com o design BONITO (igual ao seu App) ---
         let html = `<div class="modal-nav"><button class="modal-nav-btn active" data-section="tracklist">Tracklist</button><button class="modal-nav-btn" data-section="formacao">Formação</button></div><div class="details-content"><div class="modal-section active" data-section="tracklist"><ol class="tracklist">`;
         let forms = `<div class="modal-section" data-section="formacao">`;
-        tracksBuffer.forEach(t => {
+
+        tracksBuffer.forEach((t, index) => {
           const kindLabel = t.kind || 'B-side';
           const unitTxt = t.unitName ? ` • ${t.unitName}` : '';
-          html += `<li><a>${t.name}</a> <span class="label ${t.kind}">${kindLabel}${unitTxt}</span></li>`;
-          forms += t.html || '';
+          
+          html += `<li><a>${t.name}</a> <span class="label ${t.kind.toLowerCase()}">${kindLabel}${unitTxt}</span></li>`;
+          
+          forms += `
+            <div class="formation-group">
+                <div class="formation-title">
+                    ${t.kind === 'Unit' ? '<i class="fas fa-users"></i>' : ''}
+                    ${t.name}
+                </div>
+                <div class="member-grid">
+          `;
+
+          t.members.forEach(mem => {
+              const fullMem = allMembers.find(am => am.id === mem.id);
+              if(!fullMem) return;
+
+              const centerClass = mem.isCenter ? 'is-center' : '';
+              const genTxt = (fullMem.gen || '').replace('ª Geração', 'ª Gen'); 
+
+              forms += `
+                <a class="member-card-static ${centerClass}">
+                    <div class="member-photo">
+                        <img src="${fullMem.photo}" loading="lazy">
+                    </div>
+                    <div class="member-info">
+                        <h3>${fullMem.name}</h3>
+                        <p>${genTxt}</p>
+                    </div>
+                </a>
+              `;
+          });
+
+          forms += `</div></div>`; 
+          if(index < tracksBuffer.length - 1) forms += `<hr class="formation-separator"/>`;
         });
-        html += `</ol></div>${forms}</div></div>`;
+        
+        forms += `</div></div>`; 
+        html += `</ol></div>${forms}`;
 
         const tipos = [...new Set(tracksBuffer.map(t => {
           const k = String(t.kind).toLowerCase();
@@ -605,7 +727,7 @@
           } catch (err) { log(`Erro membro: ${err}`); }
         }
         log("Concluído!");
-        setTimeout(() => { showLoading(false); alert("Sucesso!"); e.target.reset(); tracksBuffer = []; updateTracks(); }, 700);
+        setTimeout(() => { showLoading(false); alert("Sucesso!"); location.reload(); }, 700);
       } catch (err) { console.error(err); showLoading(false); alert('Erro: ' + (err.error?.message || err)); }
     }
 
@@ -615,19 +737,59 @@
       if (!id) return;
       const tiposRaw = $('ed-tipos').value || "";
       const tipos = tiposRaw.split(',').map(s => s.trim()).filter(Boolean);
-      const fields = { "Titulo": $('ed-title').value, "Tipo": $('ed-type').value, "Data": $('ed-date').value, "Center": $('ed-center').value, "Capa": $('ed-cover').value, "Tracklist": $('ed-tracklist').value, "Tipo da faixa": tipos };
+      const fields = { "Tipo": $('ed-type').value, "Data": $('ed-date').value, "Center": $('ed-center').value, "Capa": $('ed-cover').value, "Tracklist": $('ed-tracklist').value, "Tipo da faixa": tipos };
       const res = await api(T_DISCO, 'PATCH', { fields }, id);
-      if (res.ok) { alert("Atualizado!"); await loadDiscos(); } else { alert("Erro ao atualizar."); }
+      if (res.ok) { alert("Atualizado!"); location.reload(); } else { alert("Erro ao atualizar."); }
     }
 
     async function deleteDisco() {
       const id = $('disco-selector')?.value;
-      if (!id || !confirm("Deletar?")) return;
-      const res = await api(T_DISCO, 'DELETE', null, id);
-      if (res.ok) { alert("Deletado!"); $('disco-edit-form').style.display = 'none'; await loadDiscos(); } else { alert("Erro."); }
+      const title = $('ed-title')?.value;
+      
+      if (!id || !title) { alert('Selecione um disco.'); return; }
+      if (!confirm(`Tem certeza? Isso apagará o Single "${title}" do histórico de TODOS os membros.`)) return;
+
+      showLoading(true, "Deletando disco e limpando históricos...");
+
+      try {
+        const res = await api(T_DISCO, 'DELETE', null, id);
+        if (!res.ok) throw new Error("Falha ao deletar disco.");
+
+        log("Limpando membros...");
+        
+        const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}`, { headers: { Authorization: `Bearer ${API_KEY}` }});
+        const d = await r.json();
+        const allMems = d.records;
+
+        let count = 0;
+        for (const m of allMems) {
+            let partString = m.fields.Participacoes || '[]';
+            let history = [];
+            try { history = JSON.parse(partString); } catch(e) {}
+
+            const initialLen = history.length;
+            const newHistory = history.filter(h => h.single !== title);
+
+            if (newHistory.length !== initialLen) {
+                log(`Limpando ${m.fields.Nome}...`);
+                await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(newHistory) } }, m.id);
+                count++;
+                await sleep(200); 
+            }
+        }
+
+        showLoading(false);
+        alert(`Disco deletado! Removido do histórico de ${count} membros.`);
+        location.reload();
+
+      } catch (e) {
+        console.error(e);
+        showLoading(false);
+        alert("Erro: " + e.message);
+      }
     }
 
-    // === BUILDER ===
+    // === BUILDER FUNCTIONS ===
     function openBuilder(){ $('builder-modal').style.display='flex'; $('builder-modal').classList.add('active'); $('step-1').style.display='block'; $('step-2').style.display='none'; if(!$('row-inputs').children.length) renderRowInputs(); toggleKindRules(); syncRowsUI(); }
     function closeBuilder(goToMenu=true){ $('builder-modal').classList.remove('active'); $('builder-modal').style.display='none'; if(goToMenu){ $('step-1').style.display='block'; $('step-2').style.display='none'; } }
     function backToFormationMenu(){ $('step-2').style.display='none'; $('step-1').style.display='block'; }
@@ -646,21 +808,43 @@
         const kind = val('b-kind'); $('unit-fields').style.display = (kind === 'Unit') ? 'block' : 'none'; 
         if(kind === 'Solo'){ $('b-total').value = 1; $('b-centers').value = 1; syncRowsUI(); if(!$('row-inputs').children.length) renderRowInputs(); const inputs=[...document.querySelectorAll('.row-count-input')]; inputs.forEach(i=>i.value=0); if(inputs[0]) inputs[0].value=1; updateRowsSum(); }
     }
+    
+    // === CENTER LOGIC VISUAL FIX ===
     function startStage(){
         const total = parseInt(val('b-total'))||0;
-        const centersWanted = parseInt(val('b-centers'))||0;
         const inputs = [...document.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
         if(inputs.reduce((a,b)=>a+b,0) !== total){ alert(`Soma incorreta. Total é ${total}.`); return; }
         
+        // Find front row count (first input is visually front)
+        const frontRowCount = inputs[0] || 0;
+        const centerCount = parseInt(val('b-centers')) || 0;
+        
+        // Calculate center positions in Front Row
+        // 0-based indices relative to the front row array
+        let centerIndices = [];
+        if (centerCount > 0 && frontRowCount > 0) {
+            // Logic for center distribution in front row
+            const start = Math.floor((frontRowCount - centerCount) / 2);
+            for(let k=0; k<centerCount; k++) centerIndices.push(start + k);
+        }
+
         const slotsWrap = $('slots'); slotsWrap.innerHTML='';
         let idx=1;
         const rowsWrap = document.createElement('div'); rowsWrap.className='rows-wrap';
         
-        // Render rows back to front visually, but logic assumes index 0 is front
+        // Render back-to-front in DOM order, so visually bottom is front
         for(let r=inputs.length-1; r>=0; r--){
             const rowDiv = document.createElement('div'); rowDiv.className='slots-row';
+            const isFrontRow = (r === 0);
+            
             for(let j=0; j<inputs[r]; j++){
                 const d=document.createElement('div'); d.className='slot'; d.dataset.index=idx;
+                
+                // If this is the front row and matches our calculated indices, add class
+                if (isFrontRow && centerIndices.includes(j)) {
+                    d.classList.add('is-center');
+                }
+
                 d.innerHTML = `<div class="slot-badge">${idx++}</div><div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div><div class="slot-name">-</div>`;
                 d.onclick=()=>openMemberModal(d);
                 rowDiv.appendChild(d);
@@ -668,12 +852,6 @@
             rowsWrap.appendChild(rowDiv);
         }
         slotsWrap.appendChild(rowsWrap);
-        
-        // Apply centers logic (simple approach: first row centers)
-        const frontRowSlots = [...rowsWrap.lastElementChild.children]; // Last child in wrap is visually front (rendered last?) No, we appended back-to-front. Wait. 
-        // Correct logic: Matrix[0] is front. We appended Matrix[last] first. So Matrix[0] is the last child of rowsWrap.
-        // Actually, let's just make centers clickable later if needed, or simple logic:
-        // For now, center logic is visual only in HTML generation.
         
         $('step-1').style.display='none'; $('step-2').style.display='block';
     }
@@ -684,7 +862,8 @@
         if(!activeSlot) return;
         activeSlot.querySelector('.slot-circle').innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}">`;
         activeSlot.querySelector('.slot-name').innerText = m.name;
-        activeSlot.dataset.id=m.id; activeSlot.dataset.name=m.name; activeSlot.dataset.isCenter=false; // Reset center status to be set in finishTrack
+        activeSlot.dataset.id=m.id; activeSlot.dataset.name=m.name; 
+        // Note: isCenter is already set by class in startStage, we don't change it here
         closeMemberModal();
     }
     function clearSlot(){ if(activeSlot){ activeSlot.querySelector('.slot-circle').innerHTML = '<i class="fas fa-plus" style="color:#ddd"></i>'; activeSlot.querySelector('.slot-name').innerText='-'; delete activeSlot.dataset.id; } closeMemberModal(); }
@@ -696,21 +875,14 @@
         const slots = [...document.querySelectorAll('.slot')].filter(s=>s.dataset.id);
         if(!slots.length){ alert('Selecione membros.'); return; }
         
-        // Auto-detect centers based on input count or manual selection? 
-        // Simplification: First N slots are centers if we assume rank order, OR we mark them.
-        // For this version, let's just say the first person added is center or use the requested count.
-        const centerCount = parseInt(val('b-centers'))||1;
-        
-        // Sort slots by index to find "front" members
-        const sortedSlots = slots.sort((a,b)=>parseInt(a.dataset.index)-parseInt(b.dataset.index));
-        const centers = sortedSlots.slice(0, centerCount);
-        
-        const members = sortedSlots.map(s => ({
+        // Use visual class to determine center
+        const members = slots.map(s => ({
             id: s.dataset.id, name: s.dataset.name, 
-            isCenter: centers.includes(s)
+            isCenter: s.classList.contains('is-center')
         }));
         
-        const centerStr = centers.map(c=>c.dataset.name).join(' & ') || 'Desconhecido';
+        const centers = members.filter(m => m.isCenter);
+        const centerStr = centers.map(c=>c.name).join(' & ') || 'Desconhecido';
         if(!tracksBuffer.length) $('d-center').value = centerStr;
         
         tracksBuffer.push({ name, kind, unitName, center: centerStr, members, html: $('slots').innerHTML });
