@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CTL48 Admin v25 (Auto-Reload)</title>
+  <title>CTL48 Admin v29 (Search Added)</title>
 
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
@@ -84,7 +84,7 @@
     .slot.is-center .slot-circle { 
         border-color: #e91e63; 
         z-index: 2; 
-        box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.25); /* Borda mais visível */
+        box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.4);
         transform: scale(1.05);
     }
     
@@ -107,11 +107,14 @@
     .track-center-badge { font-size:0.78rem; color:#e91e63; font-weight:900; }
     .track-badges { display:flex; gap:6px; flex-wrap:wrap; }
     .badge { font-size:.72rem; font-weight:900; border-radius:999px; padding:4px 10px; background:#333; color:#fff; text-transform:uppercase; letter-spacing:.3px; }
+    
+    /* SEARCH INPUTS */
+    .search-input { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-weight:700; margin-bottom:10px; font-size:0.9rem; }
   </style>
 </head>
 <body>
 
-  <div class="header">CTL48 Admin v25</div>
+  <div class="header">CTL48 Admin v29</div>
 
   <div id="loading-overlay" style="display: none;">
     <div class="spinner"></div>
@@ -137,7 +140,7 @@
     <div class="card">
       <h2>💿 Discografia</h2>
       <div style="background:#fff0f5; color:#c2185b; padding:10px; border-radius:8px; font-size:0.8rem; margin-bottom:15px; border:1px solid #f8bbd0;">
-        💡 Ao salvar, o sistema atualizará todos os membros e <b>recarregará a página</b>.
+        💡 Ao salvar, o sistema atualizará automaticamente o perfil de todos os membros e gerará o layout bonito para o App.
       </div>
       <form onsubmit="saveDisco(event)">
         <label>Título</label><input id="d-title" required placeholder="Ex: 10th Single">
@@ -214,6 +217,8 @@
   <div id="tab-manage" class="section">
     <div class="card">
       <h2>✏️ Editar Membro</h2>
+      
+      <input type="text" id="manage-search" class="search-input" placeholder="🔍 Buscar membro para editar..." oninput="renderManageSelect(this.value)">
       <select id="manage-selector" onchange="fillEditForm()"><option value="">Carregando...</option></select>
 
       <div id="edit-form" style="display: none; margin-top: 15px;">
@@ -296,10 +301,19 @@
             <button type="button" class="btn-upload" onclick="document.getElementById('ed-cover-file').click()"><i class="fas fa-upload"></i></button>
           </div>
           <div id="ed-upload-status" class="upload-status"></div>
-          <label>Tipo da faixa (Multiple)</label><input id="ed-tipos" placeholder="Ex: A-side, B-side">
-          <label>Tracklist HTML</label><textarea id="ed-tracklist" rows="6"></textarea>
-          <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
+          
+          <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
+             <label>Músicas (Detectadas)</label>
+             <div id="ed-tracks-list" style="margin-bottom:10px;"></div>
+             <button type="button" class="btn-ghost" style="font-size:0.8rem; padding:10px;" onclick="openBuilder()">+ Adicionar Nova Música</button>
+          </div>
+
+          <label>Tipo da faixa (Calculado ao Salvar)</label><input id="ed-tipos" placeholder="Ex: A-side, B-side">
+          <textarea id="ed-tracklist" style="display:none;"></textarea>
+
+          <button class="btn-main" style="background:#2196f3;">Salvar Alterações (Regerar HTML)</button>
         </form>
+
         <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
             <p style="color:#f44336; font-weight:bold; font-size:0.9rem;">Zona de Perigo</p>
             <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Ao deletar este disco, ele será removido do histórico de todos os membros.</p>
@@ -350,6 +364,9 @@
         <h3 style="margin:0;">Escolha</h3>
         <button onclick="closeMemberModal()" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">✕</button>
       </div>
+      
+      <input id="member-search" class="search-input" placeholder="Buscar membro..." oninput="renderMemberSelectionList(this.value)">
+      
       <div id="selection-list" class="selection-grid"></div>
       <button onclick="clearSlot()" class="btn-main" style="background:#f44336; margin-top:10px;">Remover (Vazio)</button>
     </div>
@@ -395,18 +412,11 @@
       el.classList.add('active');
     }
 
-    // === API ===
     async function api(table, method, body, id = null) {
       const tName = table.startsWith('tbl') ? table : encodeURIComponent(table);
       const url = `https://api.airtable.com/v0/${BASE_ID}/${tName}${id ? '/' + id : ''}`;
-      const opts = {
-        method,
-        headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
-      };
-      if (body) {
-        body.typecast = true; 
-        opts.body = JSON.stringify(body);
-      }
+      const opts = { method, headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } };
+      if (body) { body.typecast = true; opts.body = JSON.stringify(body); }
       return fetch(url, opts);
     }
 
@@ -432,58 +442,50 @@
         targetEl.value = data.data.url;
         statusEl.innerText = "✅ Imagem carregada!";
         if(targetId === 'e-photo') $('e-preview').src = data.data.url;
-      }catch(e){
-        console.error(e);
-        statusEl.innerText = "❌ Erro: " + e.message;
-      }
+      }catch(e){ console.error(e); statusEl.innerText = "❌ Erro: " + e.message; }
     }
 
     // === LOADERS ===
     async function loadMembers(){
       try {
-        const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}?sort%5B0%5D%5Bfield%5D=Time`, {
-          headers: { Authorization: `Bearer ${API_KEY}` }
-        });
+        const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}?sort%5B0%5D%5Bfield%5D=Time`, { headers: { Authorization: `Bearer ${API_KEY}` } });
         const d = await r.json();
         if(d.error) throw d.error;
+        allMembers = (d.records||[]).map(x=>({ id: x.id, name: x.fields?.Nome || '', photo: x.fields?.Foto?.[0]?.url || '', team: x.fields?.Time || '', gen: x.fields?.Geracao || '', status: x.fields?.Status || 'Ativa', part: x.fields?.Participacoes || '' }));
+        
+        // Inicializa listas
+        renderMemberSelectionList("");
+        renderManageSelect("");
+      } catch(e) { console.error(e); alert("Erro ao carregar membros."); }
+    }
 
-        allMembers = (d.records||[]).map(x=>({
-          id: x.id,
-          name: x.fields?.Nome || '',
-          photo: x.fields?.Foto?.[0]?.url || '',
-          team: x.fields?.Time || '',
-          gen: x.fields?.Geracao || '',
-          status: x.fields?.Status || 'Ativa', 
-          part: x.fields?.Participacoes || ''
-        }));
-
+    // --- FUNÇÕES DE RENDERIZAÇÃO DE LISTA ---
+    function renderMemberSelectionList(filterText = "") {
         const gl = $('selection-list');
-        if(gl) {
-            gl.innerHTML = '';
-            allMembers.forEach(m=>{
-              if(m.status === 'Graduada' || m.status === 'Demitida') return;
-              const div = document.createElement('div');
-              div.className='select-item';
-              div.innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}"><div>${m.name}</div>`;
-              div.onclick = ()=>selectMember(m);
-              gl.appendChild(div);
-            });
-        }
+        if (!gl) return;
+        const q = filterText.trim().toLowerCase();
+        gl.innerHTML = '';
+        const filtered = allMembers.filter(m => (m.status !== 'Graduada' && m.status !== 'Demitida') && (!q || m.name.toLowerCase().includes(q)));
+        if(filtered.length === 0) { gl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#999;font-weight:900;">Nenhum membro</div>'; return; }
+        filtered.forEach(m => {
+            const div = document.createElement('div'); div.className = 'select-item';
+            div.innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}"><div>${m.name}</div>`;
+            div.onclick = () => selectMember(m);
+            gl.appendChild(div);
+        });
+    }
 
+    function renderManageSelect(filterText = "") {
         const sl = $('manage-selector');
-        if(sl) {
-            sl.innerHTML = '<option value="">Selecione...</option>';
-            allMembers.forEach(m=>{
-              const o = document.createElement('option');
-              o.value = m.id;
-              o.text = m.name;
-              sl.appendChild(o);
+        if (!sl) return;
+        const q = filterText.trim().toLowerCase();
+        sl.innerHTML = '<option value="">Selecione...</option>';
+        allMembers
+            .filter(m => !q || m.name.toLowerCase().includes(q))
+            .forEach(m => {
+                const o = document.createElement('option'); o.value = m.id; o.textContent = m.name;
+                sl.appendChild(o);
             });
-        }
-      } catch(e) {
-        console.error(e);
-        alert("Erro ao carregar membros. Verifique o console.");
-      }
     }
 
     async function loadDiscos() {
@@ -492,16 +494,7 @@
         const d = await r.json();
         allDiscos = (d.records || []).map(rec => ({ id: rec.id, fields: rec.fields || {} }));
         const sel = $('disco-selector');
-        if (sel) {
-            sel.innerHTML = '<option value="">Selecione...</option>';
-            allDiscos.forEach(rec => {
-              const title = rec.fields["Titulo"] || "(Sem título)";
-              const opt = document.createElement('option');
-              opt.value = rec.id;
-              opt.textContent = title;
-              sel.appendChild(opt);
-            });
-        }
+        if (sel) { sel.innerHTML = '<option value="">Selecione...</option>'; allDiscos.forEach(rec => { const title = rec.fields["Titulo"] || "(Sem título)"; const opt = document.createElement('option'); opt.value = rec.id; opt.textContent = title; sel.appendChild(opt); }); }
       } catch (err) { console.error(err); }
     }
 
@@ -514,30 +507,67 @@
       try {
         const urls = [];
         for (const file of files) {
-          const base64 = await new Promise((resolve, reject) => {
-            const r = new FileReader();
-            r.onload = () => resolve(r.result);
-            r.onerror = reject;
-            r.readAsDataURL(file);
-          });
-          const imageOnly = String(base64).split(",")[1];
-          const form = new URLSearchParams();
-          form.append("key", IMGBB_KEY);
-          form.append("image", imageOnly);
+          const base64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
+          const form = new URLSearchParams(); form.append("key", IMGBB_KEY); form.append("image", String(base64).split(",")[1]);
           const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: form });
           const data = await res.json();
-          if (!data?.success) throw new Error(data?.error?.message || "Erro no upload");
+          if (!data?.success) throw new Error("Erro upload");
           urls.push(data.data.url);
           await sleep(150);
         }
         const current = (box.value || "").trim();
-        const merged = current ? (current + "\n" + urls.join("\n")) : urls.join("\n");
-        box.value = merged;
+        box.value = current ? (current + "\n" + urls.join("\n")) : urls.join("\n");
         if (statusEl) statusEl.innerText = "✅ Galeria atualizada!";
-      } catch (e) {
-        console.error(e);
-        if (statusEl) statusEl.innerText = "❌ Erro: " + e.message;
-      }
+      } catch (e) { if (statusEl) statusEl.innerText = "Erro"; }
+    }
+
+    // === PARSER ===
+    function parseHTMLToTracks(htmlString) {
+        if (!htmlString) return [];
+        const buffer = [];
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(htmlString, 'text/html');
+        const listItems = doc.querySelectorAll('.tracklist li');
+        let formationGroups = doc.querySelectorAll('.formation-group');
+        if(formationGroups.length === 0) formationGroups = doc.querySelectorAll('.rows-wrap');
+
+        listItems.forEach((li, index) => {
+            const link = li.querySelector('a');
+            const name = link ? link.innerText : (li.innerText || 'Música').split(' ')[0];
+            const label = li.querySelector('.label');
+            let kind = 'B-side';
+            let unitName = "";
+            if (label) {
+                const classKind = label.classList[1] || '';
+                if(classKind.includes('a-side')) kind = 'A-side';
+                else if(classKind.includes('under')) kind = 'Undergirls';
+                else if(classKind.includes('unit')) kind = 'Unit';
+                else if(classKind.includes('solo')) kind = 'Solo';
+                if(kind === 'Unit' && label.innerText !== 'Unit') unitName = label.innerText;
+            }
+            let members = [];
+            let group = formationGroups[index];
+            if (group) {
+                const slots = group.querySelectorAll('.slot');
+                if (slots.length > 0) {
+                    slots.forEach(s => {
+                        const mId = s.dataset.id; const mName = s.dataset.name;
+                        const isCenter = s.classList.contains('is-center') || s.dataset.isCenter === 'true';
+                        if(mId) members.push({ id: mId, name: mName, isCenter });
+                    });
+                } else {
+                    const cards = group.querySelectorAll('.member-card-static');
+                    cards.forEach(c => {
+                        const h3 = c.querySelector('h3'); const mName = h3 ? h3.innerText : '';
+                        const isCenter = c.classList.contains('is-center');
+                        const found = allMembers.find(m => m.name === mName);
+                        if(found) members.push({ id: found.id, name: found.name, isCenter });
+                    });
+                }
+            }
+            buffer.push({ name, kind, unitName, members, center: '', html: null }); 
+        });
+        return buffer;
     }
 
     // === FORMS ===
@@ -545,9 +575,7 @@
       const id = val('manage-selector');
       const f = $('edit-form');
       if (!id) { if (f) f.style.display = 'none'; return; }
-      const res = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${id}`, {
-        headers: { 'Authorization': `Bearer ${API_KEY}` }
-      });
+      const res = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${id}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } });
       const data = await res.json();
       const fields = data.fields || {};
       $('e-name').value = fields.Nome || '';
@@ -581,215 +609,146 @@
       $('ed-tracklist').value = f["Tracklist"] || "";
       const tipos = f["Tipo da faixa"];
       $('ed-tipos').value = Array.isArray(tipos) ? tipos.join(", ") : (tipos || "");
+      
+      const oldHTML = f["Tracklist"] || "";
+      tracksBuffer = parseHTMLToTracks(oldHTML);
+      updateTracks(true); // Atualiza a lista visual na tela de edição
+
       if (formBox) formBox.style.display = 'block';
     }
 
     // === ACTIONS ===
     async function saveMember(e) {
       e.preventDefault();
-      const genNum = val('m-gen');
-      const genStr = genNum + "ª Geração";
-      const fields = {
-        "Nome": val('m-name'),
-        "Time": val('m-team'),
-        "Geracao": genStr,
-        "Status": val('m-status-select'),
-        "Foto": val('m-photo') ? [{ url: val('m-photo') }] : [],
-        "Perfil": val('m-bio') || ""
-      };
+      const genStr = val('m-gen') + "ª Geração";
+      const fields = { "Nome": val('m-name'), "Time": val('m-team'), "Geracao": genStr, "Status": val('m-status-select'), "Foto": val('m-photo') ? [{ url: val('m-photo') }] : [], "Perfil": val('m-bio') || "" };
       const ok = await api(T_MEMBERS, 'POST', { fields });
-      if (ok.ok) {
-        alert('Membro cadastrado!');
-        e.target.reset();
-        document.getElementById('m-upload-status').innerText = "";
-        location.reload();
-      } else { alert("Erro ao salvar membro."); }
+      if (ok.ok) { alert('Membro cadastrado!'); location.reload(); } else { alert("Erro."); }
     }
 
     async function updateMember(e) {
       e.preventDefault();
-      const id = val('manage-selector');
-      if (!id) return;
+      const id = val('manage-selector'); if (!id) return;
       const galleryLines = (val('e-gallery') || '').split('\n').map(s => s.trim()).filter(Boolean);
       const genStr = val('e-gen') + "ª Geração";
-      const fields = {
-        "Nome": val('e-name'),
-        "Time": val('e-team'),
-        "Geracao": genStr,
-        "Status": val('e-status-select'),
-        "Foto": val('e-photo') ? [{ "url": val('e-photo') }] : [],
-        "Perfil": val('e-bio') || '',
-        "Galeria": galleryLines.map(url => ({ url })),
-        "Participacoes": val('e-part') || ''
-      };
+      const fields = { "Nome": val('e-name'), "Time": val('e-team'), "Geracao": genStr, "Status": val('e-status-select'), "Foto": val('e-photo') ? [{ "url": val('e-photo') }] : [], "Perfil": val('e-bio') || '', "Galeria": galleryLines.map(url => ({ url })), "Participacoes": val('e-part') || '' };
       const ok = await api(T_MEMBERS, 'PATCH', { fields }, id);
-      if (ok.ok) { alert('Atualizado!'); location.reload(); } 
-      else { alert('Erro ao atualizar.'); }
+      if (ok.ok) { alert('Atualizado!'); location.reload(); } else { alert('Erro.'); }
     }
 
     async function saveNews(e){
       e.preventDefault();
       const r = await api(T_NEWS, 'POST', { fields:{ "Titulo": val('n-title'), "Categoria": val('n-cat'), "Data": val('n-date'), "Texto": val('n-text') }});
-      if(r.ok){ alert('Notícia Salva!'); e.target.reset(); location.reload(); } else { alert('Erro.'); }
+      if(r.ok){ alert('Notícia Salva!'); location.reload(); } else { alert('Erro.'); }
     }
 
-    // === SAVE DISCOGRAFIA (GERANDO O HTML BONITO) ===
-    async function saveDisco(e) {
-      e.preventDefault();
-      if (!tracksBuffer || tracksBuffer.length === 0) { alert('Adicione músicas!'); return; }
-      showLoading(true, "Salvando Discografia...");
-      
-      try {
-        // --- 1. Gera o HTML com o design BONITO (igual ao seu App) ---
+    // === SAVE / UPDATE DISCO ===
+    function buildHTML() {
         let html = `<div class="modal-nav"><button class="modal-nav-btn active" data-section="tracklist">Tracklist</button><button class="modal-nav-btn" data-section="formacao">Formação</button></div><div class="details-content"><div class="modal-section active" data-section="tracklist"><ol class="tracklist">`;
         let forms = `<div class="modal-section" data-section="formacao">`;
 
         tracksBuffer.forEach((t, index) => {
           const kindLabel = t.kind || 'B-side';
           const unitTxt = t.unitName ? ` • ${t.unitName}` : '';
-          
           html += `<li><a>${t.name}</a> <span class="label ${t.kind.toLowerCase()}">${kindLabel}${unitTxt}</span></li>`;
           
-          forms += `
-            <div class="formation-group">
-                <div class="formation-title">
-                    ${t.kind === 'Unit' ? '<i class="fas fa-users"></i>' : ''}
-                    ${t.name}
-                </div>
-                <div class="member-grid">
-          `;
-
+          forms += `<div class="formation-group"><div class="formation-title">${t.kind === 'Unit' ? '<i class="fas fa-users"></i>' : ''} ${t.name}</div><div class="member-grid">`;
           t.members.forEach(mem => {
               const fullMem = allMembers.find(am => am.id === mem.id);
               if(!fullMem) return;
-
               const centerClass = mem.isCenter ? 'is-center' : '';
               const genTxt = (fullMem.gen || '').replace('ª Geração', 'ª Gen'); 
-
-              forms += `
-                <a class="member-card-static ${centerClass}">
-                    <div class="member-photo">
-                        <img src="${fullMem.photo}" loading="lazy">
-                    </div>
-                    <div class="member-info">
-                        <h3>${fullMem.name}</h3>
-                        <p>${genTxt}</p>
-                    </div>
-                </a>
-              `;
+              forms += `<a class="member-card-static ${centerClass}"><div class="member-photo"><img src="${fullMem.photo}" loading="lazy"></div><div class="member-info"><h3>${fullMem.name}</h3><p>${genTxt}</p></div></a>`;
           });
-
           forms += `</div></div>`; 
           if(index < tracksBuffer.length - 1) forms += `<hr class="formation-separator"/>`;
         });
-        
         forms += `</div></div>`; 
-        html += `</ol></div>${forms}`;
+        return html + forms;
+    }
 
+    async function saveDisco(e) {
+      e.preventDefault();
+      if (!tracksBuffer.length) { alert('Adicione músicas!'); return; }
+      showLoading(true, "Salvando...");
+      try {
+        const html = buildHTML();
         const tipos = [...new Set(tracksBuffer.map(t => {
-          const k = String(t.kind).toLowerCase();
-          if (k.includes('a-side')) return 'A-side';
-          if (k.includes('b-side')) return 'B-side';
-          if (k.includes('under')) return 'Undergirls';
-          if (k.includes('unit')) return 'Unit';
-          if (k.includes('solo')) return 'Solo';
-          return 'B-side';
+             const k = String(t.kind).toLowerCase();
+             if (k.includes('a-side')) return 'A-side';
+             if (k.includes('b-side')) return 'B-side';
+             if (k.includes('under')) return 'Undergirls';
+             if (k.includes('unit')) return 'Unit';
+             if (k.includes('solo')) return 'Solo';
+             return 'B-side';
         }))];
+        const firstTrack = tracksBuffer[0];
+        const centerStr = firstTrack ? firstTrack.members.filter(m=>m.isCenter).map(m=>m.name).join(' & ') : '';
 
-        const fields = { "Titulo": val('d-title'), "Tipo": val('d-type'), "Tipo da faixa": tipos, "Center": val('d-center'), "Data": val('d-date'), "Capa": val('d-cover'), "Tracklist": html };
+        const fields = { "Titulo": val('d-title'), "Tipo": val('d-type'), "Tipo da faixa": tipos, "Center": centerStr || val('d-center'), "Data": val('d-date'), "Capa": val('d-cover'), "Tracklist": html };
         const dRes = await api(T_DISCO, 'POST', { fields });
         if (!dRes.ok) throw await dRes.json();
-
-        const singleTitle = val('d-title');
-        log(`Discografia salva. Atualizando membros...`);
-        const memberUpdates = {};
-        tracksBuffer.forEach(track => {
-          const baseLabel = track.kind || 'b-side';
-          (track.members || []).forEach(mem => {
-            if (!mem?.id) return;
-            if (!memberUpdates[mem.id]) memberUpdates[mem.id] = [];
-            const labels = [baseLabel];
-            if (track.kind === 'unit' || track.kind === 'solo') labels.push('unit');
-            if (mem.isCenter) labels.push('center');
-            memberUpdates[mem.id].push({ title: track.name, labels, unitName: track.unitName || '' });
-          });
-        });
-
-        for (const [memId, newTracks] of Object.entries(memberUpdates)) {
-          try {
-            const getRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${memId}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } });
-            const getData = await getRes.json();
-            let currentHist = [];
-            try { currentHist = JSON.parse(getData.fields.Participacoes || '[]'); } catch (e) {}
-            currentHist.push({ single: singleTitle, tracks: newTracks });
-            await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(currentHist) } }, memId);
-            await sleep(250);
-          } catch (err) { log(`Erro membro: ${err}`); }
-        }
-        log("Concluído!");
+        
+        await updateMembersHistory(val('d-title'), tracksBuffer);
         setTimeout(() => { showLoading(false); alert("Sucesso!"); location.reload(); }, 700);
-      } catch (err) { console.error(err); showLoading(false); alert('Erro: ' + (err.error?.message || err)); }
+      } catch (err) { showLoading(false); alert('Erro: ' + err); }
     }
 
     async function updateDisco(e) {
       e.preventDefault();
       const id = $('disco-selector')?.value;
       if (!id) return;
-      const tiposRaw = $('ed-tipos').value || "";
-      const tipos = tiposRaw.split(',').map(s => s.trim()).filter(Boolean);
-      const fields = { "Tipo": $('ed-type').value, "Data": $('ed-date').value, "Center": $('ed-center').value, "Capa": $('ed-cover').value, "Tracklist": $('ed-tracklist').value, "Tipo da faixa": tipos };
+      showLoading(true, "Atualizando (Regerando HTML)...");
+      
+      const html = buildHTML(); 
+      const firstTrack = tracksBuffer[0];
+      const centerStr = firstTrack ? firstTrack.members.filter(m=>m.isCenter).map(m=>m.name).join(' & ') : '';
+
+      const fields = { "Tipo": $('ed-type').value, "Data": $('ed-date').value, "Center": centerStr, "Capa": $('ed-cover').value, "Tracklist": html };
+      
       const res = await api(T_DISCO, 'PATCH', { fields }, id);
-      if (res.ok) { alert("Atualizado!"); location.reload(); } else { alert("Erro ao atualizar."); }
+      if (res.ok) { alert("Atualizado!"); location.reload(); } else { alert("Erro."); showLoading(false); }
+    }
+
+    async function updateMembersHistory(singleTitle, tracks) {
+        const memberUpdates = {};
+        tracks.forEach(track => {
+          if(!track.members) return;
+          const baseLabel = track.kind || 'b-side';
+          track.members.forEach(mem => {
+            if (!mem?.id) return;
+            if (!memberUpdates[mem.id]) memberUpdates[mem.id] = [];
+            const labels = [baseLabel];
+            if (track.kind === 'unit') labels.push('unit');
+            if (mem.isCenter) labels.push('center');
+            memberUpdates[mem.id].push({ title: track.name, labels, unitName: track.unitName || '' });
+          });
+        });
+        
+        for (const [memId, newTracks] of Object.entries(memberUpdates)) {
+             const getRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${memId}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } });
+             const getData = await getRes.json();
+             let currentHist = [];
+             try { currentHist = JSON.parse(getData.fields.Participacoes || '[]'); } catch (e) {}
+             currentHist.push({ single: singleTitle, tracks: newTracks });
+             await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(currentHist) } }, memId);
+             await sleep(200);
+        }
     }
 
     async function deleteDisco() {
       const id = $('disco-selector')?.value;
       const title = $('ed-title')?.value;
-      
-      if (!id || !title) { alert('Selecione um disco.'); return; }
-      if (!confirm(`Tem certeza? Isso apagará o Single "${title}" do histórico de TODOS os membros.`)) return;
-
-      showLoading(true, "Deletando disco e limpando históricos...");
-
+      if (!id || !title) return;
+      if (!confirm(`Tem certeza?`)) return;
+      showLoading(true, "Deletando...");
       try {
-        const res = await api(T_DISCO, 'DELETE', null, id);
-        if (!res.ok) throw new Error("Falha ao deletar disco.");
-
-        log("Limpando membros...");
-        
-        const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}`, { headers: { Authorization: `Bearer ${API_KEY}` }});
-        const d = await r.json();
-        const allMems = d.records;
-
-        let count = 0;
-        for (const m of allMems) {
-            let partString = m.fields.Participacoes || '[]';
-            let history = [];
-            try { history = JSON.parse(partString); } catch(e) {}
-
-            const initialLen = history.length;
-            const newHistory = history.filter(h => h.single !== title);
-
-            if (newHistory.length !== initialLen) {
-                log(`Limpando ${m.fields.Nome}...`);
-                await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(newHistory) } }, m.id);
-                count++;
-                await sleep(200); 
-            }
-        }
-
-        showLoading(false);
-        alert(`Disco deletado! Removido do histórico de ${count} membros.`);
-        location.reload();
-
-      } catch (e) {
-        console.error(e);
-        showLoading(false);
-        alert("Erro: " + e.message);
-      }
+        await api(T_DISCO, 'DELETE', null, id);
+        alert(`Deletado!`); location.reload();
+      } catch (e) { showLoading(false); alert("Erro"); }
     }
 
-    // === BUILDER FUNCTIONS ===
+    // === BUILDER & UI ===
     function openBuilder(){ $('builder-modal').style.display='flex'; $('builder-modal').classList.add('active'); $('step-1').style.display='block'; $('step-2').style.display='none'; if(!$('row-inputs').children.length) renderRowInputs(); toggleKindRules(); syncRowsUI(); }
     function closeBuilder(goToMenu=true){ $('builder-modal').classList.remove('active'); $('builder-modal').style.display='none'; if(goToMenu){ $('step-1').style.display='block'; $('step-2').style.display='none'; } }
     function backToFormationMenu(){ $('step-2').style.display='none'; $('step-1').style.display='block'; }
@@ -798,9 +757,7 @@
         const wrap = $('row-inputs'); const count = parseInt(val('b-rowcount'))||3; 
         const old = [...wrap.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
         wrap.innerHTML='';
-        for(let i=0;i<count;i++){
-            wrap.innerHTML += `<div class="rowline"><div class="row-tag">${i===0?'Frente':(i===count-1?'Fundo':`Meio ${i}`)}</div><input type="number" min="0" class="row-count-input" value="${old[i]||0}" oninput="updateRowsSum()"></div>`;
-        }
+        for(let i=0;i<count;i++){ wrap.innerHTML += `<div class="rowline"><div class="row-tag">${i===0?'Frente':(i===count-1?'Fundo':`Meio ${i}`)}</div><input type="number" min="0" class="row-count-input" value="${old[i]||0}" oninput="updateRowsSum()"></div>`; }
         updateRowsSum();
     }
     function updateRowsSum(){ const total = parseInt(val('b-total'))||0; const sum = [...document.querySelectorAll('.row-count-input')].reduce((a,b)=>a+(parseInt(b.value)||0),0); $('rows-sum').innerText = sum; $('rows-sum').style.color = (sum===total) ? '#00b894' : '#e91e63'; }
@@ -808,43 +765,26 @@
         const kind = val('b-kind'); $('unit-fields').style.display = (kind === 'Unit') ? 'block' : 'none'; 
         if(kind === 'Solo'){ $('b-total').value = 1; $('b-centers').value = 1; syncRowsUI(); if(!$('row-inputs').children.length) renderRowInputs(); const inputs=[...document.querySelectorAll('.row-count-input')]; inputs.forEach(i=>i.value=0); if(inputs[0]) inputs[0].value=1; updateRowsSum(); }
     }
-    
-    // === CENTER LOGIC VISUAL FIX ===
     function startStage(){
         const total = parseInt(val('b-total'))||0;
         const inputs = [...document.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
-        if(inputs.reduce((a,b)=>a+b,0) !== total){ alert(`Soma incorreta. Total é ${total}.`); return; }
-        
-        // Find front row count (first input is visually front)
-        const frontRowCount = inputs[0] || 0;
+        if(inputs.reduce((a,b)=>a+b,0) !== total){ alert(`Soma incorreta.`); return; }
         const centerCount = parseInt(val('b-centers')) || 0;
-        
-        // Calculate center positions in Front Row
-        // 0-based indices relative to the front row array
+        const frontRowCount = inputs[0] || 0;
         let centerIndices = [];
         if (centerCount > 0 && frontRowCount > 0) {
-            // Logic for center distribution in front row
             const start = Math.floor((frontRowCount - centerCount) / 2);
             for(let k=0; k<centerCount; k++) centerIndices.push(start + k);
         }
-
         const slotsWrap = $('slots'); slotsWrap.innerHTML='';
         let idx=1;
         const rowsWrap = document.createElement('div'); rowsWrap.className='rows-wrap';
-        
-        // Render back-to-front in DOM order, so visually bottom is front
         for(let r=inputs.length-1; r>=0; r--){
             const rowDiv = document.createElement('div'); rowDiv.className='slots-row';
             const isFrontRow = (r === 0);
-            
             for(let j=0; j<inputs[r]; j++){
                 const d=document.createElement('div'); d.className='slot'; d.dataset.index=idx;
-                
-                // If this is the front row and matches our calculated indices, add class
-                if (isFrontRow && centerIndices.includes(j)) {
-                    d.classList.add('is-center');
-                }
-
+                if (isFrontRow && centerIndices.includes(j)) d.classList.add('is-center');
                 d.innerHTML = `<div class="slot-badge">${idx++}</div><div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div><div class="slot-name">-</div>`;
                 d.onclick=()=>openMemberModal(d);
                 rowDiv.appendChild(d);
@@ -852,47 +792,51 @@
             rowsWrap.appendChild(rowDiv);
         }
         slotsWrap.appendChild(rowsWrap);
-        
         $('step-1').style.display='none'; $('step-2').style.display='block';
     }
     
-    function openMemberModal(slotEl){ activeSlot = slotEl; $('member-select-modal').style.display='flex'; }
+    function openMemberModal(slotEl){ 
+        activeSlot = slotEl; 
+        $('member-select-modal').style.display='flex'; 
+        
+        // Reset Search
+        const search = $('member-search');
+        if(search) { search.value = ""; search.focus(); renderMemberSelectionList(""); }
+    }
+
     function closeMemberModal(){ $('member-select-modal').style.display='none'; activeSlot=null; }
+    
     function selectMember(m){
         if(!activeSlot) return;
         activeSlot.querySelector('.slot-circle').innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}">`;
         activeSlot.querySelector('.slot-name').innerText = m.name;
         activeSlot.dataset.id=m.id; activeSlot.dataset.name=m.name; 
-        // Note: isCenter is already set by class in startStage, we don't change it here
         closeMemberModal();
     }
     function clearSlot(){ if(activeSlot){ activeSlot.querySelector('.slot-circle').innerHTML = '<i class="fas fa-plus" style="color:#ddd"></i>'; activeSlot.querySelector('.slot-name').innerText='-'; delete activeSlot.dataset.id; } closeMemberModal(); }
     
     function finishTrack(){
-        const name = val('b-song').trim(); if(!name){ alert('Nome da música?'); return; }
+        const name = val('b-song').trim(); if(!name){ alert('Nome?'); return; }
         const kind = val('b-kind');
         const unitName = val('b-unit-name');
         const slots = [...document.querySelectorAll('.slot')].filter(s=>s.dataset.id);
         if(!slots.length){ alert('Selecione membros.'); return; }
+        const centerCount = parseInt(val('b-centers'))||1;
+        const sortedSlots = slots.sort((a,b)=>parseInt(a.dataset.index)-parseInt(b.dataset.index));
+        const centers = sortedSlots.slice(0, centerCount);
+        const members = sortedSlots.map(s => ({ id: s.dataset.id, name: s.dataset.name, isCenter: s.classList.contains('is-center') }));
         
-        // Use visual class to determine center
-        const members = slots.map(s => ({
-            id: s.dataset.id, name: s.dataset.name, 
-            isCenter: s.classList.contains('is-center')
-        }));
-        
-        const centers = members.filter(m => m.isCenter);
-        const centerStr = centers.map(c=>c.name).join(' & ') || 'Desconhecido';
-        if(!tracksBuffer.length) $('d-center').value = centerStr;
-        
-        tracksBuffer.push({ name, kind, unitName, center: centerStr, members, html: $('slots').innerHTML });
-        updateTracks(); closeBuilder(true);
+        tracksBuffer.push({ name, kind, unitName, members, html: null }); 
+        updateTracks(true); closeBuilder(true);
     }
     
-    function updateTracks(){
-        const c = $('tracks-list'); c.innerHTML = tracksBuffer.length ? '' : '<div style="text-align:center;color:#999;font-size:0.85rem;">Vazio</div>';
+    function updateTracks(isEdit = false){
+        const listId = isEdit ? 'ed-tracks-list' : 'tracks-list';
+        const c = $(listId); 
+        if(!c) return;
+        c.innerHTML = tracksBuffer.length ? '' : '<div style="text-align:center;color:#999;font-size:0.85rem;">Vazio</div>';
         tracksBuffer.forEach((t,i)=>{
-            c.innerHTML += `<div class="track-item"><div><b>${t.name}</b> <span class="badge">${t.kind}</span></div><button onclick="tracksBuffer.splice(${i},1);updateTracks()" style="color:red;border:none;background:none;font-weight:900;">X</button></div>`;
+            c.innerHTML += `<div class="track-item"><div><b>${t.name}</b> <span class="badge">${t.kind}</span></div><button onclick="tracksBuffer.splice(${i},1);updateTracks(${isEdit})" style="color:red;border:none;background:none;font-weight:900;">X</button></div>`;
         });
     }
     
