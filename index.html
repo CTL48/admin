@@ -1,0 +1,1409 @@
+<html lang="pt-br"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CTL48 Admin v20 (Manual Only)</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&amp;display=swap" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+  <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
+
+  <style>
+    :root { --primary: #e91e63; --bg: #f4f6f8; --card: #fff; }
+    body { background:var(--bg); margin:0; padding-bottom:100px; font-family:'Roboto', sans-serif; color:#333; }
+    .header { background: linear-gradient(135deg, var(--primary), #ff5f9e); padding:15px; text-align:center; color:white; font-weight:900; position:sticky; top:0; z-index:100; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+
+    .section { display:none; padding:15px; animation:fadeIn 0.25s; }
+    .section.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    .card { background:white; padding:20px; border-radius:12px; margin-bottom:15px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+
+    label { display:block; font-size:0.85rem; font-weight:900; color:#444; margin-top:12px; margin-bottom:6px; text-align:left; text-transform:uppercase; letter-spacing:.4px; }
+    input, select, textarea {
+      width:100%; padding:12px; border:1px solid #ddd; border-radius:10px;
+      background:#fff; font-size:1rem; transition:.2s; color:#333;
+    }
+    select { appearance:none; -webkit-appearance:none; }
+    textarea { resize:vertical; }
+
+    .btn-main { width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:50px; font-weight:900; margin-top:16px; font-size:1rem; cursor:pointer; }
+    .btn-main:active { transform:scale(.98); }
+    .btn-ghost{
+      width:100%;
+      padding:15px;
+      border-radius:50px;
+      font-weight:900;
+      border:2px solid #333;
+      background:#fff;
+      color:#333;
+      cursor:pointer;
+    }
+    .btn-ghost:active{ transform:scale(.98); }
+
+    .input-group { display:flex; gap:8px; align-items:center; margin-top:5px; }
+    .input-group input { margin-top:0; }
+    .btn-upload { background:#333; color:white; border:none; padding:12px 15px; border-radius:10px; cursor:pointer; white-space:nowrap; }
+    .btn-upload i { font-size:1.1rem; }
+    .upload-status { font-size:0.78rem; color:#e91e63; margin-top:6px; font-weight:900; min-height:15px; }
+
+    /* NAV */
+    .bottom-nav { position:fixed; bottom:0; width:100%; height:70px; background:white; display:flex; border-top:1px solid #eee; z-index:1000; }
+    .nav-item { flex:1; border:none; background:none; color:#999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:0.7rem; font-weight:900; }
+    .nav-item.active { color:var(--primary); }
+    .nav-item i { font-size:1.4rem; margin-bottom:4px; }
+
+    /* LOADING */
+    #loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.92); z-index:5000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+    .spinner { border:5px solid #f3f3f3; border-top:5px solid var(--primary); border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin-bottom:20px; }
+    @keyframes spin { 0% { transform:rotate(0deg);} 100% { transform:rotate(360deg);} }
+    #loading-text { font-weight:900; color:var(--primary); }
+    #loading-log { font-size:0.85rem; color:#666; margin-top:10px; max-height:140px; overflow-y:auto; width:86%; }
+
+    /* BUILDER MODAL */
+    .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; display:none; flex-direction:column; overflow-y:auto; }
+    .modal-overlay.active { display:flex; animation:slideUp .25s; }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+
+    .modal-header { padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:white; z-index:10; }
+    .modal-header button{ border:none; background:none; font-size:1.6rem; cursor:pointer; }
+
+    .stage-area{ padding:20px; }
+    .builder-topnote{
+      text-align:center;
+      font-weight:900;
+      color:#e91e63;
+      font-size:0.9rem;
+      margin-bottom:12px;
+    }
+
+    /* MANUAL ROWS PANEL */
+    .rows-panel{
+      margin-top:10px;
+      padding:12px;
+      border:1px solid #eee;
+      border-radius:12px;
+      background:#fafafa;
+    }
+    .rows-panel .rowline{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .row-tag{ min-width:92px; font-size:0.75rem; font-weight:900; color:#444; text-transform:uppercase; letter-spacing:.4px; }
+    .row-sum{ margin-top:10px; font-size:0.85rem; font-weight:900; color:#666; }
+    .row-sum b{ color:#e91e63; }
+
+    /* Formation rendering */
+    .slots-container { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; padding:18px; border:2px dashed #ddd; margin-top:15px; border-radius:12px; background:#fafafa; }
+    .rows-wrap{ display:flex; flex-direction:column; gap:14px; } /* top->bottom */
+    .slots-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+
+    .slot { width:74px; text-align:center; position:relative; cursor:pointer; transition:transform .2s; }
+    .slot:active { transform:scale(.92); }
+    .slot-circle { width:64px; height:64px; border-radius:50%; background:white; border:2px solid #ddd; display:flex; justify-content:center; align-items:center; margin:0 auto; overflow:hidden; transition:.2s; position:relative; }
+    .slot.is-center .slot-circle { border-color:#e91e63; z-index:2; box-shadow:0 0 0 3px rgba(233,30,99,.15); }
+    .slot-badge { position:absolute; bottom:18px; right:2px; background:#333; color:white; width:20px; height:20px; font-size:.65rem; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:5; border:2px solid white; font-weight:900; }
+    .slot.is-center .slot-badge { background:#e91e63; }
+    .slot img { width:100%; height:100%; object-fit:cover; }
+    .slot-name { font-size:0.68rem; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:900; }
+
+    /* MEMBER PICKER */
+    .selection-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; display:none; justify-content:center; align-items:center; }
+    .selection-box { background:white; width:90%; max-height:80vh; border-radius:15px; padding:20px; display:flex; flex-direction:column; }
+    .selection-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(78px, 1fr)); gap:10px; overflow-y:auto; padding:10px; }
+    .select-item { text-align:center; cursor:pointer; padding:6px; border-radius:10px; transition:.2s; }
+    .select-item:hover { background:#f5f5f5; }
+    .select-item img { width:66px; height:66px; border-radius:50%; object-fit:cover; border:2px solid #eee; }
+    .select-item div { font-size:0.72rem; font-weight:900; margin-top:6px; line-height:1.15; }
+
+    /* tracks list */
+    .track-item { background:#fff0f5; padding:12px; border-radius:10px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #ffc1e3; }
+    .track-center-badge { font-size:0.78rem; color:#e91e63; font-weight:900; }
+    .track-badges { display:flex; gap:6px; flex-wrap:wrap; }
+    .badge {
+      font-size:.72rem;
+      font-weight:900;
+      border-radius:999px;
+      padding:4px 10px;
+      background:#333;
+      color:#fff;
+      text-transform:uppercase;
+      letter-spacing:.3px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">CTL48 Admin v20</div>
+
+  <div id="loading-overlay" style="display: none;">
+    <div class="spinner"></div>
+    <div id="loading-text">Salvando Discografia...</div>
+    <div id="loading-log"></div>
+  </div>
+
+  <!-- NEWS -->
+  <div id="tab-news" class="section">
+    <div class="card">
+      <h2>📢 Nova Notícia</h2>
+      <form onsubmit="saveNews(event)">
+        <label>Título</label><input id="n-title" required="">
+        <label>Categoria</label>
+        <select id="n-cat"><option>Release</option><option>Event</option><option>Notice</option><option>Theater</option></select>
+        <label>Data</label><input type="date" id="n-date" required="">
+        <label>Conteúdo</label><textarea id="n-text" rows="5"></textarea>
+        <button class="btn-main">Publicar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- DISCO -->
+  <div id="tab-disco" class="section active">
+    <div class="card">
+      <h2>💿 Discografia</h2>
+
+      <form onsubmit="saveDisco(event)">
+        <label>Título</label><input id="d-title" required="" placeholder="Ex: 10th Single">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1">
+            <label>Tipo</label>
+            <select id="d-type"><option>Single</option><option>Album</option><option>Stage</option></select>
+          </div>
+          <div style="flex:1">
+            <label>Data</label><input type="date" id="d-date" required="">
+          </div>
+        </div>
+
+        <label>Center (Automático)</label>
+        <input id="d-center" placeholder="Automático..." readonly="" style="background:#eee;">
+
+        <label>Capa (URL ou Upload)</label>
+        <div class="input-group">
+          <input id="d-cover" placeholder="https://..." required="">
+          <input type="file" id="d-cover-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'd-cover', 'd-upload-status')">
+          <button type="button" class="btn-upload" onclick="document.getElementById('d-cover-file').click()"><i class="fas fa-upload"></i></button>
+        </div>
+        <div id="d-upload-status" class="upload-status"></div>
+
+        <div style="margin-top:16px; border-top:1px solid #eee; padding-top:14px;">
+          <label>Músicas &amp; Formações</label>
+          <div id="tracks-list"><div style="text-align:center;color:#999;font-size:0.85rem;">Vazio</div></div>
+          <button type="button" class="btn-main" style="background:#333; margin-top:10px;" onclick="openBuilder()">+ Adicionar Música</button>
+        </div>
+
+        <button class="btn-main">Salvar Tudo</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MEMBERS -->
+  <div id="tab-members" class="section">
+    <div class="card">
+      <h2>👤 Novo Membro</h2>
+      <form onsubmit="saveMember(event)">
+        <label>Nome</label><input id="m-name" required="">
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1">
+            <label>Time</label>
+            <select id="m-team"><option>Team C</option><option>Team T</option><option>Team L</option><option>Team Kenkyuusei</option></select>
+          </div>
+          <div style="flex:1">
+            <label>Geração (Nº)</label><input type="number" id="m-gen" required="" placeholder="Ex: 1">
+          </div>
+        </div>
+        <label>Status</label>
+        <select id="m-status-select"><option value="Ativa">Ativa</option><option value="Graduada">Graduada</option><option value="Demitida">Demitida</option><option value="Expulsa">Expulsa</option></select>
+
+        <label>Foto (URL ou Upload)</label>
+        <div class="input-group">
+          <input id="m-photo" placeholder="https://..." required="">
+          <input type="file" id="m-photo-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'm-photo', 'm-upload-status')">
+          <button type="button" class="btn-upload" onclick="document.getElementById('m-photo-file').click()"><i class="fas fa-upload"></i></button>
+        </div>
+        <div id="m-upload-status" class="upload-status"></div>
+
+        <button class="btn-main">Cadastrar</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- MANAGE -->
+  <div id="tab-manage" class="section">
+    <div class="card">
+      <h2>✏️ Editar Membro</h2>
+      <select id="manage-selector" onchange="fillEditForm()"><option value="">Selecione...</option><option value="rec9DSszm1xQ31Kny">Kay</option><option value="recjniuUcG7KPGRqK">Sarina XupaKU</option><option value="reciOyw3wkAskzskp">Sarina XupaKU copy</option><option value="recwF26AC7zER7VUW">Sarina XupaKU copy copy</option></select>
+
+      <div id="edit-form" style="display: block; margin-top: 15px;">
+        <img id="e-preview" src="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/F4hPtnX-VS8uXQ8FeR_p1g/_2_NO38QnmDvCNhqBVqLi7X_MmuCgHdq9FCWhudF2RjdJahJvm3sPjhj5Q6fjkOYj1Fy-4SWMpFDbgq2e90-p8URccVLR-qqpgltZZzrKfLQZndYMs16fYVxmxJ2UNM0sqH3DxzaBm8-V_4OXBSOaw/4u6o0uNNq0GQfIjUpYqweIfu-k4FR2qjXJ4YbR33hUE" style="width:80px;height:80px;border-radius:50%; margin-bottom:10px; border:2px solid #eee;">
+        <form onsubmit="updateMember(event)">
+          <label>Nome</label><input id="e-name" required="">
+
+          <div style="display:flex; gap:10px;">
+            <div style="flex:1">
+              <label>Time</label>
+              <select id="e-team"><option>Team C</option><option>Team T</option><option>Team L</option><option>Team Kenkyuusei</option></select>
+            </div>
+            <div style="flex:1">
+              <label>Geração (Nº)</label><input type="number" id="e-gen" required="" placeholder="Ex: 1">
+            </div>
+          </div>
+
+          <label>Status</label>
+          <select id="e-status-select"><option value="Ativa">Ativa</option><option value="Graduada">Graduada</option><option value="Demitida">Demitida</option><option value="Expulsa">Expulsa</option></select>
+
+          <label>Foto (URL ou Upload)</label>
+          <div class="input-group">
+            <input id="e-photo" required="" onchange="document.getElementById('e-preview').src=this.value">
+            <input type="file" id="e-photo-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'e-photo', 'e-upload-status')">
+            <button type="button" class="btn-upload" onclick="document.getElementById('e-photo-file').click()"><i class="fas fa-upload"></i></button>
+          </div>
+          <div id="e-upload-status" class="upload-status"></div>
+
+          <label>Participações (JSON)</label>
+          <textarea id="e-part" rows="3"></textarea>
+
+          <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- BUILDER -->
+  <div id="builder-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-header">
+      <span style="font-weight:900;">Formação</span>
+      <button onclick="closeBuilder(true)">✕</button>
+    </div>
+
+    <!-- STEP 1 -->
+    <div id="step-1" style="padding: 20px; display: block;">
+      <label>Música</label>
+      <input id="b-song" placeholder="Nome da faixa">
+
+      <label>Tipo da faixa</label>
+      <select id="b-kind" onchange="toggleKindRules()">
+        <option value="A-side">A-side</option>
+        <option value="B-side">B-side</option>
+        <option value="Undergirls">Undergirls</option>
+        <option value="Unit">Unit</option>
+        <option value="Solo">Solo</option>
+      </select>
+
+      <div id="unit-fields" style="display:none;">
+        <label>Nome da Unit</label>
+        <input id="b-unit-name" placeholder="Ex: Under Girls / Duo X / ...">
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+        <div>
+          <label>Total (Membros)</label>
+          <input type="number" id="b-total" value="16" min="1" oninput="syncRowsUI()">
+        </div>
+        <div>
+          <label>Centers</label>
+          <input type="number" id="b-centers" value="1" min="0" oninput="syncRowsUI()">
+        </div>
+      </div>
+
+      <div id="manual-rows" class="rows-panel">
+        <label>Quantidade de fileiras</label>
+        <select id="b-rowcount" onchange="renderRowInputs()">
+          <option value="2">2</option>
+          <option value="3" selected="">3</option>
+          <option value="4">4</option>
+        </select>
+
+        <div id="row-inputs"><div class="rowline"><div class="row-tag">Frente</div><input type="number" min="0" class="row-count-input"></div><div class="rowline"><div class="row-tag">Meio 1</div><input type="number" min="0" class="row-count-input"></div><div class="rowline"><div class="row-tag">Fundo</div><input type="number" min="0" class="row-count-input"></div></div>
+
+        <div class="row-sum">
+          Soma: <b id="rows-sum" style="color: rgb(0, 184, 148);">16</b> / <b id="rows-total">16</b>
+        </div>
+      </div>
+
+      <button class="btn-main" onclick="startStage()">Montar</button>
+    </div>
+
+    <!-- STEP 2 -->
+    <div id="step-2" class="stage-area" style="display: none;">
+      <div class="builder-topnote">Toque na bolinha para escolher!</div>
+
+      <!-- print só pega isso -->
+      <div id="slots" class="slots-container"><div class="rows-wrap"><div class="slots-row"><div class="slot" data-index="10">
+          <div class="slot-badge">10</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="11">
+          <div class="slot-badge">11</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="12">
+          <div class="slot-badge">12</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="13">
+          <div class="slot-badge">13</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="14">
+          <div class="slot-badge">14</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="15">
+          <div class="slot-badge">15</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="16">
+          <div class="slot-badge">16</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div></div><div class="slots-row"><div class="slot" data-index="6">
+          <div class="slot-badge">6</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="7">
+          <div class="slot-badge">7</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="8">
+          <div class="slot-badge">8</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="9">
+          <div class="slot-badge">9</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div></div><div class="slots-row"><div class="slot" data-index="1">
+          <div class="slot-badge">1</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot" data-index="2">
+          <div class="slot-badge">2</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div><div class="slot is-center" data-index="3" data-filled="true" data-id="reciOyw3wkAskzskp" data-name="Sarina XupaKU copy" data-photo="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/C02ohghUF2aOvD5JjiOmyQ/Ff0A5rrgAHgF9ADA_Rfo6DP9jdgEZNuF66VM7sowF-7LRNjlVw2F5XDwyQoXB8EuUAF3DCT6xeMz0R7CFeeBINCitMeNOyrqvV5ckoIxtNvizDM4DfBxO8OX7xcC8UNemYrLXjyvLzZCtCwtyJP2lw/-CV9EEyJSt-P3nkcicFor8Ljb93NxqrFEHaEJj8KhjM" data-team="Team T" data-gen="1ª Geração">
+          <div class="slot-badge">3</div>
+          <div class="slot-circle"><img src="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/C02ohghUF2aOvD5JjiOmyQ/Ff0A5rrgAHgF9ADA_Rfo6DP9jdgEZNuF66VM7sowF-7LRNjlVw2F5XDwyQoXB8EuUAF3DCT6xeMz0R7CFeeBINCitMeNOyrqvV5ckoIxtNvizDM4DfBxO8OX7xcC8UNemYrLXjyvLzZCtCwtyJP2lw/-CV9EEyJSt-P3nkcicFor8Ljb93NxqrFEHaEJj8KhjM"></div>
+          <div class="slot-name">Sarina XupaKU copy</div>
+        </div><div class="slot" data-index="4" data-filled="true" data-id="recjniuUcG7KPGRqK" data-name="Sarina XupaKU" data-photo="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/C02ohghUF2aOvD5JjiOmyQ/Ff0A5rrgAHgF9ADA_Rfo6DP9jdgEZNuF66VM7sowF-7LRNjlVw2F5XDwyQoXB8EuUAF3DCT6xeMz0R7CFeeBINCitMeNOyrqvV5ckoIxtNvizDM4DfBxO8OX7xcC8UNemYrLXjyvLzZCtCwtyJP2lw/-CV9EEyJSt-P3nkcicFor8Ljb93NxqrFEHaEJj8KhjM" data-team="Team T" data-gen="1ª Geração">
+          <div class="slot-badge">4</div>
+          <div class="slot-circle"><img src="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/C02ohghUF2aOvD5JjiOmyQ/Ff0A5rrgAHgF9ADA_Rfo6DP9jdgEZNuF66VM7sowF-7LRNjlVw2F5XDwyQoXB8EuUAF3DCT6xeMz0R7CFeeBINCitMeNOyrqvV5ckoIxtNvizDM4DfBxO8OX7xcC8UNemYrLXjyvLzZCtCwtyJP2lw/-CV9EEyJSt-P3nkcicFor8Ljb93NxqrFEHaEJj8KhjM"></div>
+          <div class="slot-name">Sarina XupaKU</div>
+        </div><div class="slot" data-index="5">
+          <div class="slot-badge">5</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        </div></div></div></div>
+
+      <div style="display:flex; gap:10px; margin-top:16px;">
+        <button type="button" class="btn-ghost" onclick="backToFormationMenu()">Voltar</button>
+        <button type="button" class="btn-main" style="background:#6c5ce7; margin-top:0;" onclick="captureFormation()">Print</button>
+        <button type="button" class="btn-main" style="background:#00b894; margin-top:0;" onclick="finishTrack()">Confirmar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MEMBER PICKER -->
+  <div id="member-select-modal" class="selection-modal" style="display: none;">
+    <div class="selection-box">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Escolha</h3>
+        <button onclick="closeMemberModal()" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">✕</button>
+      </div>
+      <div id="selection-list" class="selection-grid"><div class="select-item"><img src="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/F4hPtnX-VS8uXQ8FeR_p1g/_2_NO38QnmDvCNhqBVqLi7X_MmuCgHdq9FCWhudF2RjdJahJvm3sPjhj5Q6fjkOYj1Fy-4SWMpFDbgq2e90-p8URccVLR-qqpgltZZzrKfLQZndYMs16fYVxmxJ2UNM0sqH3DxzaBm8-V_4OXBSOaw/4u6o0uNNq0GQfIjUpYqweIfu-k4FR2qjXJ4YbR33hUE"><div>Kay</div></div><div class="select-item"><img src="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/C02ohghUF2aOvD5JjiOmyQ/Ff0A5rrgAHgF9ADA_Rfo6DP9jdgEZNuF66VM7sowF-7LRNjlVw2F5XDwyQoXB8EuUAF3DCT6xeMz0R7CFeeBINCitMeNOyrqvV5ckoIxtNvizDM4DfBxO8OX7xcC8UNemYrLXjyvLzZCtCwtyJP2lw/-CV9EEyJSt-P3nkcicFor8Ljb93NxqrFEHaEJj8KhjM"><div>Sarina XupaKU</div></div><div class="select-item"><img src="https://v5.airtableusercontent.com/v3/u/49/49/1768932000000/C02ohghUF2aOvD5JjiOmyQ/Ff0A5rrgAHgF9ADA_Rfo6DP9jdgEZNuF66VM7sowF-7LRNjlVw2F5XDwyQoXB8EuUAF3DCT6xeMz0R7CFeeBINCitMeNOyrqvV5ckoIxtNvizDM4DfBxO8OX7xcC8UNemYrLXjyvLzZCtCwtyJP2lw/-CV9EEyJSt-P3nkcicFor8Ljb93NxqrFEHaEJj8KhjM"><div>Sarina XupaKU copy</div></div></div>
+
+      <button onclick="clearSlot()" class="btn-main" style="background:#f44336; margin-top:10px;">
+        Remover (Vazio)
+      </button>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="nav-item" onclick="nav('news', this)"><i class="fas fa-newspaper"></i>News</button>
+    <button class="nav-item active" onclick="nav('disco', this)"><i class="fas fa-compact-disc"></i>Disco</button>
+    <button class="nav-item" onclick="nav('members', this)"><i class="fas fa-user-plus"></i>Add</button>
+    <button class="nav-item" onclick="nav('manage', this)"><i class="fas fa-edit"></i>Edit</button>
+<button class="nav-item" onclick="nav('managedisco', this)">
+  <i class="fas fa-folder-open"></i>editar discos
+</button>
+
+  </div>
+
+  <script>
+    /* =========================
+       CONFIG (COLE AQUI)
+    ========================= */
+    const API_KEY = 'patzIKAjwQnDtoIme.1aca2da0458d3f76cb528a285652d695a5acd97dee0ed3af3ddcbbeff2daaac6';
+        const BASE_ID = 'appVh4GZeAWJ06uey';
+    const T_NEWS = "Noticias";
+    const T_DISCO = "Discografia";
+    const T_MEMBERS = "tblaFURTBeUVGx6IW"; // se for tabela por ID, mantém. Se for nome, troca.
+        const IMGBB_KEY = "81f7ca81cf22d739de576bd1dac7dcc2"; 
+
+    // NOME EXATO DO CAMPO no Airtable (Discografia):
+    const FIELD_TRACK_TYPES = "Tipo da faixa"; // confirme que está igualzinho
+
+    let allMembers = [];
+    let activeSlot = null;
+    let tracksBuffer = [];
+
+    function $(id){ return document.getElementById(id); }
+    function val(id){ const el = $(id); return el ? el.value : ""; }
+    const sleep = (ms)=> new Promise(r=>setTimeout(r, ms));
+
+    function showLoading(show, txt){
+      const el = $('loading-overlay');
+      el.style.display = show ? 'flex' : 'none';
+      if (txt) $('loading-text').innerText = txt;
+      $('loading-log').innerHTML = '';
+    }
+    function log(msg){ $('loading-log').innerHTML += `<div>${msg}</div>`; }
+
+    function nav(id, el){
+      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+      $('tab-'+id).classList.add('active');
+      el.classList.add('active');
+    }
+
+    /* =========================
+       Airtable API (com erro real no console)
+    ========================= */
+  async function api(table, method, body, id = null) {
+  const tName = table.startsWith('tbl') ? table : encodeURIComponent(table);
+  const url = `https://api.airtable.com/v0/${BASE_ID}/${tName}${id ? '/' + id : ''}`;
+
+  const opts = {
+    method,
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    }
+  };
+
+  if (body !== null && body !== undefined) {
+    opts.body = JSON.stringify(body);
+  }
+
+  const res = await fetch(url, opts);
+
+  if (!res.ok) {
+    try {
+      const err = await res.json();
+      console.error("Airtable error:", err);
+    } catch (_) {}
+  }
+
+  return res;
+}
+
+
+    /* =========================
+       Upload imgbb -> retorna link
+    ========================= */
+    async function uploadImage(input, targetId, statusId){
+      const file = input.files[0];
+      if(!file) return;
+
+      const statusEl = $(statusId);
+      const targetEl = $(targetId);
+      statusEl.innerText = "⏳ Enviando imagem...";
+
+      try{
+        const base64 = await new Promise((resolve,reject)=>{
+          const reader = new FileReader();
+          reader.onload = ()=>resolve(reader.result);
+          reader.onerror = reject;
+          reader.readAsDataURL(file);
+        });
+
+        const imageOnly = base64.split(",")[1];
+        const form = new URLSearchParams();
+        form.append("key", IMGBB_KEY);
+        form.append("image", imageOnly);
+
+        const res = await fetch("https://api.imgbb.com/1/upload", { method:"POST", body: form });
+        const data = await res.json();
+        if(!data?.success) throw new Error(data?.error?.message || "Erro no upload");
+
+        targetEl.value = data.data.url;
+        statusEl.innerText = "✅ Imagem carregada!";
+
+        if(targetId === 'e-photo') $('e-preview').src = data.data.url;
+      }catch(e){
+        console.error(e);
+        statusEl.innerText = "❌ Erro: " + e.message;
+      }
+    }
+// ===== Discografia Manage =====
+let allDiscos = []; // cache local
+
+async function loadDiscos() {
+  try {
+    const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(T_DISCO)}?pageSize=100&sort%5B0%5D%5Bfield%5D=Data&sort%5B0%5D%5Bdirection%5D=desc`;
+    const r = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` }});
+    const d = await r.json();
+
+    allDiscos = (d.records || []).map(rec => ({
+      id: rec.id,
+      fields: rec.fields || {}
+    }));
+
+    const sel = document.getElementById('disco-selector');
+    if (!sel) return;
+
+    sel.innerHTML = '<option value="">Selecione...</option>';
+    allDiscos.forEach(rec => {
+      const title = rec.fields["Titulo"] || "(Sem título)";
+      const date = rec.fields["Data"] || "";
+      const type = rec.fields["Tipo"] || "";
+      const opt = document.createElement('option');
+      opt.value = rec.id;
+      opt.textContent = `${title}${type ? " • " + type : ""}${date ? " • " + date : ""}`;
+      sel.appendChild(opt);
+    });
+
+  } catch (err) {
+    console.error(err);
+    const sel = document.getElementById('disco-selector');
+    if (sel) sel.innerHTML = '<option value="">Erro ao carregar</option>';
+  }
+}
+
+function fillDiscoEditForm() {
+  const id = document.getElementById('disco-selector')?.value;
+  const formBox = document.getElementById('disco-edit-form');
+  if (!id) { if (formBox) formBox.style.display = 'none'; return; }
+
+  const rec = allDiscos.find(r => r.id === id);
+  if (!rec) { if (formBox) formBox.style.display = 'none'; return; }
+
+  const f = rec.fields;
+
+  document.getElementById('ed-title').value = f["Titulo"] || "";
+  document.getElementById('ed-type').value = f["Tipo"] || "Single";
+  document.getElementById('ed-date').value = (f["Data"] || "").slice(0,10);
+  document.getElementById('ed-center').value = f["Center"] || "";
+  document.getElementById('ed-cover').value = f["Capa"] || "";
+  document.getElementById('ed-tracklist').value = f["Tracklist"] || "";
+
+  // Tipo da faixa (multiple select) -> mostrar como texto separado por vírgula
+  const tipos = f["Tipo da faixa"];
+  document.getElementById('ed-tipos').value = Array.isArray(tipos) ? tipos.join(", ") : (tipos || "");
+
+  if (document.getElementById('ed-upload-status')) {
+    document.getElementById('ed-upload-status').innerText = "";
+  }
+
+  if (formBox) formBox.style.display = 'block';
+}
+
+async function updateDisco(e) {
+  e.preventDefault();
+
+  const id = document.getElementById('disco-selector')?.value;
+  if (!id) return;
+
+  // transforma "A-side, B-side, Unit" -> ["A-side","B-side","Unit"]
+  const tiposRaw = document.getElementById('ed-tipos').value || "";
+  const tipos = tiposRaw
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+
+  const fields = {
+    "Titulo": document.getElementById('ed-title').value,
+    "Tipo": document.getElementById('ed-type').value,
+    "Data": document.getElementById('ed-date').value,
+    "Center": document.getElementById('ed-center').value,
+    "Capa": document.getElementById('ed-cover').value,
+    "Tracklist": document.getElementById('ed-tracklist').value
+  };
+
+  // só manda se existir no Airtable (e for multiple select)
+  fields["Tipo da faixa"] = tipos;
+
+  const res = await api(T_DISCO, 'PATCH', { fields }, id);
+
+  if (!res.ok) {
+    let err = null;
+    try { err = await res.json(); } catch(_){}
+    console.error("Airtable error:", err);
+    alert(err?.error?.message ? `Erro: ${err.error.message}` : "Erro ao atualizar.");
+    return;
+  }
+
+  alert("Discografia atualizada!");
+  await loadDiscos();
+}
+
+async function deleteDisco() {
+  const id = document.getElementById('disco-selector')?.value;
+  if (!id) return;
+
+  const ok = confirm("Tem certeza que deseja deletar este disco? Isso não tem volta.");
+  if (!ok) return;
+
+  const res = await api(T_DISCO, 'DELETE', null, id);
+
+  if (!res.ok) {
+    let err = null;
+    try { err = await res.json(); } catch(_){}
+    console.error("Airtable error:", err);
+    alert(err?.error?.message ? `Erro: ${err.error.message}` : "Erro ao deletar.");
+    return;
+  }
+
+  alert("Disco deletado!");
+  document.getElementById('disco-edit-form').style.display = 'none';
+  await loadDiscos();
+}
+
+    /* =========================
+       NEWS
+    ========================= */
+    async function saveNews(e){
+      e.preventDefault();
+      const r = await api(T_NEWS, 'POST', { fields:{
+        "Titulo": val('n-title'),
+        "Categoria": val('n-cat'),
+        "Data": val('n-date'),
+        "Texto": val('n-text')
+      }});
+
+      if(r.ok){ alert('Notícia Salva!'); e.target.reset(); }
+      else { alert('Erro ao salvar notícia (veja console).'); }
+    }
+
+    /* =========================
+       MEMBERS
+    ========================= */
+    async function saveMember(e){
+      e.preventDefault();
+      const genNum = val('m-gen');
+      const genStr = `${genNum}ª Geração`;
+
+      const r = await api(T_MEMBERS, 'POST', { fields:{
+        "Nome": val('m-name'),
+        "Time": val('m-team'),
+        "Geracao": genStr,
+        "Status": val('m-status-select'),
+        "Foto": [{ url: val('m-photo') }]
+      }});
+
+      if(r.ok){
+        alert('Membro Salvo!');
+        e.target.reset();
+        $('m-upload-status').innerText = "";
+        loadMembers();
+      } else {
+        alert('Erro ao salvar membro (veja console).');
+      }
+    }
+
+    async function updateMember(e){
+      e.preventDefault();
+      const id = val('manage-selector');
+      if(!id) return;
+
+      const genNum = val('e-gen');
+      const genStr = `${genNum}ª Geração`;
+
+      const r = await api(T_MEMBERS, 'PATCH', { fields:{
+        "Nome": val('e-name'),
+        "Time": val('e-team'),
+        "Geracao": genStr,
+        "Status": val('e-status-select'),
+        "Foto": [{ url: val('e-photo') }],
+        "Participacoes": val('e-part')
+      }}, id);
+
+      if(r.ok){ alert('Atualizado!'); loadMembers(); }
+      else { alert('Erro ao atualizar (veja console).'); }
+    }
+
+    async function loadMembers(){
+      const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}?sort%5B0%5D%5Bfield%5D=Time`, {
+        headers: { Authorization: `Bearer ${API_KEY}` }
+      });
+      const d = await r.json();
+
+      allMembers = (d.records||[]).map(x=>({
+        id: x.id,
+        name: x.fields?.Nome || '',
+        photo: x.fields?.Foto?.[0]?.url || '',
+        team: x.fields?.Time || '',
+        gen: x.fields?.Geracao || '',
+        status: x.fields?.Status || '',
+        part: x.fields?.Participacoes || ''
+      }));
+
+      // builder picker
+      const gl = $('selection-list');
+      gl.innerHTML = '';
+      allMembers.forEach(m=>{
+        if(m.status === 'Graduada' || m.status === 'Demitida') return;
+        const div = document.createElement('div');
+        div.className='select-item';
+        div.innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}"><div>${m.name}</div>`;
+        div.onclick = ()=>selectMember(m);
+        gl.appendChild(div);
+      });
+
+      // edit selector
+      const sl = $('manage-selector');
+      sl.innerHTML = '<option value="">Selecione...</option>';
+      allMembers.forEach(m=>{
+        const o = document.createElement('option');
+        o.value = m.id;
+        o.text = m.name;
+        sl.appendChild(o);
+      });
+    }
+
+    function fillEditForm(){
+      const id = val('manage-selector');
+      const box = $('edit-form');
+      if(!id){ box.style.display='none'; return; }
+
+      const m = allMembers.find(x=>x.id===id);
+      if(!m){ box.style.display='none'; return; }
+
+      $('e-name').value = m.name;
+      $('e-team').value = m.team || "Team C";
+
+      const genNum = (m.gen || '').replace('ª Geração','').trim();
+      $('e-gen').value = genNum || 1;
+
+      $('e-status-select').value = m.status || 'Ativa';
+      $('e-photo').value = m.photo || '';
+      $('e-preview').src = m.photo || 'https://placehold.co/100';
+      $('e-part').value = m.part || '';
+      $('e-upload-status').innerText = "";
+
+      box.style.display='block';
+    }
+
+    /* =========================
+       BUILDER open/close
+    ========================= */
+    function openBuilder(){
+      const overlay = $('builder-modal');
+      overlay.style.display='flex';
+      overlay.classList.add('active');
+
+      $('step-1').style.display='block';
+      $('step-2').style.display='none';
+
+      // init
+      if(!$('row-inputs').children.length) renderRowInputs();
+      toggleKindRules();
+      syncRowsUI();
+    }
+
+    function closeBuilder(goToMenu=true){
+      $('builder-modal').classList.remove('active');
+      $('builder-modal').style.display='none';
+      if(goToMenu){
+        $('step-1').style.display='block';
+        $('step-2').style.display='none';
+      }
+    }
+
+    function backToFormationMenu(){
+      $('step-2').style.display='none';
+      $('step-1').style.display='block';
+    }
+
+    /* =========================
+       Manual rows UI
+    ========================= */
+    function syncRowsUI(){
+      const total = parseInt(val('b-total'))||0;
+      $('rows-total').innerText = total;
+      updateRowsSum();
+    }
+
+    function renderRowInputs(){
+      const wrap = $('row-inputs');
+      const count = parseInt(val('b-rowcount'))||3;
+
+      const old = [...wrap.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
+      wrap.innerHTML='';
+
+      for(let i=0;i<count;i++){
+        const line = document.createElement('div');
+        line.className='rowline';
+
+        const tag = document.createElement('div');
+        tag.className='row-tag';
+        tag.innerText = (i===0) ? 'Frente' : (i===count-1 ? 'Fundo' : `Meio ${i}`);
+
+        const input = document.createElement('input');
+        input.type='number';
+        input.min='0';
+        input.className='row-count-input';
+        input.value = Number.isFinite(old[i]) ? old[i] : 0;
+        input.oninput = ()=>updateRowsSum();
+
+        line.appendChild(tag);
+        line.appendChild(input);
+        wrap.appendChild(line);
+      }
+      updateRowsSum();
+    }
+
+    function getRowsFrontToBack(){
+      return [...document.querySelectorAll('.row-count-input')].map(i=>Math.max(0, parseInt(i.value)||0));
+    }
+
+    function setRowsFrontToBack(arr){
+      const inputs = [...document.querySelectorAll('.row-count-input')];
+      for(let i=0;i<inputs.length;i++){
+        inputs[i].value = arr[i] ?? 0;
+      }
+      updateRowsSum();
+    }
+
+    function updateRowsSum(){
+      const total = parseInt(val('b-total'))||0;
+      const sum = getRowsFrontToBack().reduce((a,b)=>a+b,0);
+      $('rows-sum').innerText = sum;
+      $('rows-sum').style.color = (sum===total) ? '#00b894' : '#e91e63';
+    }
+
+    /* =========================
+       Kind rules (Unit fields / Solo limit)
+    ========================= */
+    function toggleKindRules(){
+      const kind = val('b-kind');
+      $('unit-fields').style.display = (kind === 'Unit') ? 'block' : 'none';
+
+      if(kind === 'Solo'){
+        // força solo: 1 membro, 1 center, fileiras: frente=1 resto=0
+        $('b-total').value = 1;
+        $('b-centers').value = 1;
+        syncRowsUI();
+
+        // garante que existe inputs
+        if(!$('row-inputs').children.length) renderRowInputs();
+
+        // arr do tamanho atual de fileiras
+        const count = parseInt(val('b-rowcount'))||3;
+        const rows = new Array(count).fill(0);
+        rows[0] = 1; // frente
+        setRowsFrontToBack(rows);
+      }
+    }
+
+    /* =========================
+       Centers logic (determinístico)
+    ========================= */
+    function applyCentersForRow(slotsInRow, centersWanted){
+      slotsInRow.forEach(s=>s.classList.remove('is-center'));
+      const n = slotsInRow.length;
+      if(centersWanted<=0 || n<=0) return;
+
+      if(centersWanted===1){
+        const mid = Math.floor(n/2);
+        slotsInRow[mid]?.classList.add('is-center');
+        return;
+      }
+      if(centersWanted===2){
+        if(n===1){ slotsInRow[0].classList.add('is-center'); return; }
+        const left = Math.floor((n-1)/2);
+        const right = left+1;
+        slotsInRow[left]?.classList.add('is-center');
+        slotsInRow[right]?.classList.add('is-center');
+        return;
+      }
+
+      const mid = Math.floor(n/2);
+      let placed=0, step=0;
+      while(placed<centersWanted && step<n){
+        const a = mid-step;
+        const b = mid+step;
+        if(a>=0 && placed<centersWanted){ slotsInRow[a].classList.add('is-center'); placed++; }
+        if(b<n && b!==a && placed<centersWanted){ slotsInRow[b].classList.add('is-center'); placed++; }
+        step++;
+      }
+    }
+
+    /* =========================
+       startStage (MANUAL ONLY)
+       - numeração começa na frente: 1..N
+       - render de cima pra baixo: fundo -> frente
+       - center sempre na frente
+    ========================= */
+    function startStage(){
+      const total = parseInt(val('b-total'))||0;
+      const centersWanted = parseInt(val('b-centers'))||0;
+      const kind = val('b-kind');
+
+      const rows = getRowsFrontToBack(); // [frente, meio..., fundo]
+      const sum = rows.reduce((a,b)=>a+b,0);
+      if(sum !== total){
+        alert(`As fileiras somam ${sum}, mas o Total está ${total}. Ajuste.`);
+        return;
+      }
+
+      const slotsWrap = $('slots');
+      slotsWrap.innerHTML='';
+
+      const makeSlot = (index)=>{
+        const d=document.createElement('div');
+        d.className='slot';
+        d.dataset.index=index;
+        d.innerHTML = `
+          <div class="slot-badge">${index}</div>
+          <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+          <div class="slot-name">-</div>
+        `;
+        d.onclick=()=>openMemberModal(d);
+        return d;
+      };
+
+      const matrix = []; // matrix[0]=frente
+      let idx=1;
+
+      for(let r=0;r<rows.length;r++){
+        const count = rows[r];
+        const rowSlots=[];
+        for(let j=0;j<count;j++) rowSlots.push(makeSlot(idx++));
+        matrix[r]=rowSlots;
+      }
+
+      const rowsWrap = document.createElement('div');
+      rowsWrap.className='rows-wrap';
+
+      for(let r=matrix.length-1;r>=0;r--){
+        const row = document.createElement('div');
+        row.className='slots-row';
+        matrix[r].forEach(s=>row.appendChild(s));
+        rowsWrap.appendChild(row);
+      }
+
+      slotsWrap.appendChild(rowsWrap);
+
+      // centers sempre na frente
+      applyCentersForRow(matrix[0], centersWanted);
+
+      $('step-1').style.display='none';
+      $('step-2').style.display='block';
+
+      // regra solo: só 1 pessoa
+      if(kind === 'Solo'){
+        // se por algum motivo ficou mais de 1 slot, bloqueia no final mesmo
+      }
+    }
+
+    /* =========================
+       picker modal
+    ========================= */
+    function openMemberModal(slotEl){
+      activeSlot = slotEl;
+      $('member-select-modal').style.display='flex';
+    }
+    function closeMemberModal(){
+      $('member-select-modal').style.display='none';
+      activeSlot=null;
+    }
+
+    function selectMember(m){
+      if(!activeSlot) return;
+
+      activeSlot.querySelector('.slot-circle').innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}">`;
+      activeSlot.querySelector('.slot-name').innerText = m.name;
+
+      activeSlot.dataset.filled='true';
+      activeSlot.dataset.id=m.id;
+      activeSlot.dataset.name=m.name;
+      activeSlot.dataset.photo=m.photo;
+      activeSlot.dataset.team=m.team;
+      activeSlot.dataset.gen=m.gen;
+
+      closeMemberModal();
+    }
+
+    function clearSlot(){
+      if(activeSlot){
+        activeSlot.querySelector('.slot-circle').innerHTML = '<i class="fas fa-plus" style="color:#ddd"></i>';
+        activeSlot.querySelector('.slot-name').innerText='-';
+        delete activeSlot.dataset.filled;
+        delete activeSlot.dataset.id;
+        delete activeSlot.dataset.name;
+        delete activeSlot.dataset.photo;
+        delete activeSlot.dataset.team;
+        delete activeSlot.dataset.gen;
+      }
+      closeMemberModal();
+    }
+
+    /* =========================
+       Print formation (#slots only)
+    ========================= */
+    async function captureFormation(){
+      const area = $('slots');
+      if(!area) return;
+      await sleep(150);
+
+      const canvas = await html2canvas(area, {
+        backgroundColor:"#ffffff",
+        useCORS:true,
+        scale:2
+      });
+
+      const link = document.createElement('a');
+      link.download = `formacao-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+
+    /* =========================
+       finishTrack
+       - SOLO: valida 1 pessoa
+    ========================= */
+    function finishTrack(){
+      const name = val('b-song').trim();
+      if(!name){ alert('Coloque o nome da música.'); return; }
+
+      const kind = val('b-kind'); // A-side/B-side/Undergirls/Unit/Solo
+      const unitName = val('b-unit-name').trim();
+
+      const slots = [...document.querySelectorAll('.slot')];
+
+      const membersInTrack = [];
+      const centers = [];
+
+      slots.forEach(s=>{
+        if(!s.dataset.name) return;
+        const isCenter = s.classList.contains('is-center');
+        if(isCenter) centers.push(s.dataset.name);
+        membersInTrack.push({ id: s.dataset.id, name: s.dataset.name, isCenter });
+      });
+
+      if(membersInTrack.length === 0){
+        alert('Selecione pelo menos 1 membro.');
+        return;
+      }
+
+      if(kind === 'Solo' && membersInTrack.length !== 1){
+        alert('Solo deve ter exatamente 1 membro.');
+        return;
+      }
+
+      const centerStr = centers.length ? centers.join(' & ') : 'Desconhecido';
+      if(tracksBuffer.length === 0) $('d-center').value = centerStr;
+
+      tracksBuffer.push({
+        name,
+        kind,
+        unitName,
+        center: centerStr,
+        members: membersInTrack
+      });
+
+      updateTracks();
+      closeBuilder(true);
+    }
+
+    function updateTracks(){
+      const c = $('tracks-list');
+      if(!tracksBuffer.length){
+        c.innerHTML = '<div style="text-align:center;color:#999;font-size:0.85rem;">Vazio</div>';
+        return;
+      }
+
+      c.innerHTML = '';
+      tracksBuffer.forEach((t,i)=>{
+        const badges = [
+          `<span class="badge">${t.kind}</span>`,
+          (t.kind === 'Unit' && t.unitName) ? `<span class="badge">${t.unitName}</span>` : ''
+        ].join('');
+
+        c.innerHTML += `
+          <div class="track-item">
+            <div style="display:flex;flex-direction:column;gap:6px;">
+              <div style="font-weight:900;">🎵 ${t.name}</div>
+              <div class="track-badges">${badges}</div>
+              <div class="track-center-badge">Center: ${t.center}</div>
+            </div>
+            <button onclick="tracksBuffer.splice(${i},1);updateTracks()"
+              style="color:red;border:none;background:none;font-weight:900;font-size:1.2rem;cursor:pointer;">✕</button>
+          </div>
+        `;
+      });
+    }
+
+    /* =========================
+       saveDisco (Capa Attachment + Tipo da faixa)
+    ========================= */
+    async function saveDisco(e) {
+  e.preventDefault();
+
+  if (!tracksBuffer || tracksBuffer.length === 0) {
+    alert('Adicione músicas!');
+    return;
+  }
+
+  showLoading(true, "Salvando Discografia...");
+
+  try {
+    // =========================
+    // 1) Monta o HTML da tracklist + formações (igual você já fazia)
+    // =========================
+    let html = `
+      <div class="modal-nav">
+        <button class="modal-nav-btn active" data-section="tracklist">Tracklist</button>
+        <button class="modal-nav-btn" data-section="formacao">Formação</button>
+      </div>
+      <div class="details-content">
+        <div class="modal-section active" data-section="tracklist">
+          <ol class="tracklist">
+    `;
+
+    let forms = `<div class="modal-section" data-section="formacao">`;
+
+    tracksBuffer.forEach(t => {
+      const kindLabel =
+        (t.kind === 'a-side') ? 'A-side' :
+        (t.kind === 'b-side') ? 'B-side' :
+        (t.kind === 'undergirls') ? 'Undergirls' :
+        (t.kind === 'unit') ? 'Unit' :
+        (t.kind === 'solo') ? 'Solo' :
+        (t.kind || '').toString();
+
+      const unitTxt = t.unitName ? ` • ${t.unitName}` : '';
+      html += `<li><a>${t.name}</a> <span class="label ${t.kind}">${kindLabel}${unitTxt}</span></li>`;
+      forms += t.html || '';
+    });
+
+    html += `</ol></div>${forms}</div></div>`;
+
+    // =========================
+    // 2) MULTIPLE SELECT: Tipo da faixa (array)
+    // =========================
+    // IMPORTANTE: no Airtable o campo "Tipo da faixa" deve ser Multiple select
+    // e as opções devem bater exatamente com os valores abaixo.
+    const mapKindToAirtableOption = (kind) => {
+      if (!kind) return null;
+      const k = String(kind).toLowerCase();
+      if (k === 'a-side' || k === 'aside') return 'A-side';
+      if (k === 'b-side' || k === 'bside') return 'B-side';
+      if (k === 'undergirls' || k === 'under-girls' || k === 'under girls') return 'Undergirls';
+      if (k === 'unit') return 'Unit';
+      if (k === 'solo') return 'Solo';
+      return kind; // fallback (mas pode dar 422 se não existir no Airtable)
+    };
+
+    const tipos = [...new Set(
+      tracksBuffer
+        .map(t => mapKindToAirtableOption(t.kind))
+        .filter(Boolean)
+    )];
+
+    // =========================
+    // 3) POST na tabela Discografia
+    // =========================
+    const fields = {
+      "Titulo": val('d-title'),
+      "Tipo": val('d-type'),
+      "Tipo da faixa": tipos,     // ✅ multiple select (array)
+      "Center": val('d-center'),
+      "Data": val('d-date'),
+      "Capa": val('d-cover'),
+      "Tracklist": html
+    };
+
+    const dRes = await api(T_DISCO, 'POST', { fields });
+
+    // Airtable retorna 422 com JSON explicando o erro
+    if (!dRes.ok) {
+      let err = null;
+      try { err = await dRes.json(); } catch (_) {}
+      console.error('Airtable error:', err);
+      showLoading(false);
+
+      // mensagem mais útil
+      const msg = err?.error?.message
+        ? `Erro ao salvar disco: ${err.error.message}`
+        : `Erro ao salvar disco. Verifique nomes dos campos no Airtable.`;
+
+      alert(msg);
+      return;
+    }
+
+    // =========================
+    // 4) Atualiza Participações dos membros (igual seu fluxo)
+    // =========================
+    const singleTitle = val('d-title');
+    log(`Discografia salva. Atualizando membros...`);
+
+    const memberUpdates = {};
+
+    tracksBuffer.forEach(track => {
+      const baseLabel = track.kind || 'b-side';
+
+      (track.members || []).forEach(mem => {
+        if (!mem?.id) return;
+        if (!memberUpdates[mem.id]) memberUpdates[mem.id] = [];
+
+        const labels = [baseLabel];
+
+        if (track.kind === 'unit' || track.kind === 'sub-unit' || track.kind === 'solo') {
+          labels.push('unit');
+        }
+        if (mem.isCenter) labels.push('center');
+
+        memberUpdates[mem.id].push({
+          title: track.name,
+          labels,
+          unitName: track.unitName || ''
+        });
+      });
+    });
+
+    const total = Object.keys(memberUpdates).length;
+    let current = 0;
+
+    for (const [memId, newTracks] of Object.entries(memberUpdates)) {
+      current++;
+      const memName = allMembers.find(m => m.id === memId)?.name || 'Membro';
+      log(`Atualizando ${memName} (${current}/${total})...`);
+
+      try {
+        const getRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${memId}`, {
+          headers: { 'Authorization': `Bearer ${API_KEY}` }
+        });
+        const getData = await getRes.json();
+
+        let currentHist = [];
+        try { currentHist = JSON.parse(getData.fields.Participacoes || '[]'); } catch (e) {}
+
+        currentHist.push({ single: singleTitle, tracks: newTracks });
+
+        await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(currentHist) } }, memId);
+
+        await sleep(250);
+      } catch (err) {
+        log(`Erro ao atualizar ${memName}: ${err}`);
+      }
+    }
+
+    log("Concluído!");
+    setTimeout(() => {
+      showLoading(false);
+      alert("Tudo salvo e membros atualizados!");
+      e.target.reset();
+
+      // limpa status de upload se existir
+      if (document.getElementById('d-upload-status')) {
+        document.getElementById('d-upload-status').innerText = "";
+      }
+
+      tracksBuffer = [];
+      updateTracks();
+    }, 700);
+
+  } catch (err) {
+    console.error(err);
+    showLoading(false);
+    alert('Erro inesperado ao salvar disco.');
+  }
+}
+
+    /* =========================
+       Boot
+    ========================= */
+    loadMembers();
+    loadDiscos();
+
+    // expose
+    window.nav = nav;
+    window.saveNews = saveNews;
+    window.saveDisco = saveDisco;
+    window.uploadImage = uploadImage;
+
+    window.saveMember = saveMember;
+    window.updateMember = updateMember;
+    window.fillEditForm = fillEditForm;
+
+    window.openBuilder = openBuilder;
+    window.closeBuilder = closeBuilder;
+    window.backToFormationMenu = backToFormationMenu;
+
+    window.toggleKindRules = toggleKindRules;
+    window.renderRowInputs = renderRowInputs;
+    window.syncRowsUI = syncRowsUI;
+
+    window.startStage = startStage;
+    window.captureFormation = captureFormation;
+
+    window.openMemberModal = openMemberModal;
+    window.closeMemberModal = closeMemberModal;
+    window.selectMember = selectMember;
+    window.clearSlot = clearSlot;
+
+    window.finishTrack = finishTrack;
+  </script>
+
+
+<div id="tab-managedisco" class="section">
+  <div class="card">
+    <h2>🗂️ Gerenciar Discografia</h2>
+
+    <label>Selecionar disco</label>
+    <select id="disco-selector" onchange="fillDiscoEditForm()">
+      <option value="">Carregando...</option>
+    </select>
+
+    <div id="disco-edit-form" style="display:none; margin-top:15px;">
+      <form onsubmit="updateDisco(event)">
+        <label>Título</label>
+        <input id="ed-title" required>
+
+        <div style="display:flex; gap:10px;">
+          <div style="flex:1">
+            <label>Tipo</label>
+            <select id="ed-type">
+              <option>Single</option>
+              <option>Album</option>
+              <option>Stage</option>
+            </select>
+          </div>
+          <div style="flex:1">
+            <label>Data</label>
+            <input type="date" id="ed-date" required>
+          </div>
+        </div>
+
+        <label>Center</label>
+        <input id="ed-center">
+
+        <label>Capa (URL)</label>
+        <div class="input-group">
+          <input id="ed-cover" placeholder="https://..." required>
+          <input type="file" id="ed-cover-file" hidden accept="image/*"
+                 onchange="uploadImage(this, 'ed-cover', 'ed-upload-status')">
+          <button type="button" class="btn-upload"
+                  onclick="document.getElementById('ed-cover-file').click()">
+            <i class="fas fa-upload"></i>
+          </button>
+        </div>
+        <div id="ed-upload-status" class="upload-status"></div>
+
+        <label>Tipo da faixa (Multiple select)</label>
+        <input id="ed-tipos" placeholder="Ex: A-side, B-side, Unit">
+
+        <label>Tracklist HTML</label>
+        <textarea id="ed-tracklist" rows="6"></textarea>
+
+        <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
+      </form>
+
+      <button class="btn-main" style="background:#f44336;"
+              onclick="deleteDisco()">
+        Deletar Disco
+      </button>
+    </div>
+  </div>
+</div>
+
+
+</body></html>
