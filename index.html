@@ -155,7 +155,7 @@
   </div>
 
   <!-- DISCO -->
-  <div id="tab-disco" class="section active">
+  <div id="tab-disco" class="section">
     <div class="card">
       <h2>💿 Discografia</h2>
 
@@ -416,10 +416,10 @@
 
   <div class="bottom-nav">
     <button class="nav-item" onclick="nav('news', this)"><i class="fas fa-newspaper"></i>News</button>
-    <button class="nav-item active" onclick="nav('disco', this)"><i class="fas fa-compact-disc"></i>Disco</button>
+    <button class="nav-item" onclick="nav('disco', this)"><i class="fas fa-compact-disc"></i>Disco</button>
     <button class="nav-item" onclick="nav('members', this)"><i class="fas fa-user-plus"></i>Add</button>
     <button class="nav-item" onclick="nav('manage', this)"><i class="fas fa-edit"></i>Edit</button>
-<button class="nav-item" onclick="nav('managedisco', this)">
+<button class="nav-item active" onclick="nav('managedisco', this)">
   <i class="fas fa-folder-open"></i>editar discos
 </button>
 
@@ -1344,19 +1344,17 @@ async function deleteDisco() {
   </script>
 
 
-<div id="tab-managedisco" class="section">
+<div id="tab-managedisco" class="section active">
   <div class="card">
     <h2>🗂️ Gerenciar Discografia</h2>
 
     <label>Selecionar disco</label>
-    <select id="disco-selector" onchange="fillDiscoEditForm()">
-      <option value="">Carregando...</option>
-    </select>
+    <select id="disco-selector" onchange="fillDiscoEditForm()"><option value="">Selecione...</option><option value="recehcD24rIDbudbs">Xupa editado • Single • 2026-01-23</option><option value="recxztxewGlpuFiCG">Mirai - 1st album • Album • 2026-01-20</option><option value="recJndwsQxDJWlyzG">asdasd • Single • 2026-01-20</option><option value="reci3xnBdN9BT2GFo">yuuhi wo miteiru ka? - 5th single • Single • 2026-01-19</option><option value="recDlvqXY9KDQ4tHh">ad21 • Single • 2026-01-14</option><option value="reczjA0ihsWNnlzTA">Aitakatta - 1st single (RELOAD) • Single • 2026-01-06</option><option value="rec8pTZlPLQkjdhZq">Aitakatta - 1st single  • Single • 2026-01-01</option><option value="recD1ecCqJW1AuExh">Aitakatta - 1st single (Deluxe) • Single • 2026-01-01</option></select>
 
-    <div id="disco-edit-form" style="display:none; margin-top:15px;">
+    <div id="disco-edit-form" style="display: block; margin-top: 15px;">
       <form onsubmit="updateDisco(event)">
         <label>Título</label>
-        <input id="ed-title" required>
+        <input id="ed-title" required="">
 
         <div style="display:flex; gap:10px;">
           <div style="flex:1">
@@ -1369,7 +1367,7 @@ async function deleteDisco() {
           </div>
           <div style="flex:1">
             <label>Data</label>
-            <input type="date" id="ed-date" required>
+            <input type="date" id="ed-date" required="">
           </div>
         </div>
 
@@ -1378,15 +1376,13 @@ async function deleteDisco() {
 
         <label>Capa (URL)</label>
         <div class="input-group">
-          <input id="ed-cover" placeholder="https://..." required>
-          <input type="file" id="ed-cover-file" hidden accept="image/*"
-                 onchange="uploadImage(this, 'ed-cover', 'ed-upload-status')">
-          <button type="button" class="btn-upload"
-                  onclick="document.getElementById('ed-cover-file').click()">
+          <input id="ed-cover" placeholder="https://..." required="">
+          <input type="file" id="ed-cover-file" hidden="" accept="image/*" onchange="uploadImage(this, 'ed-cover', 'ed-upload-status')">
+          <button type="button" class="btn-upload" onclick="document.getElementById('ed-cover-file').click()">
             <i class="fas fa-upload"></i>
           </button>
         </div>
-        <div id="ed-upload-status" class="upload-status"></div>
+        <div id="ed-upload-status" class="upload-status">✅ Imagem carregada!</div>
 
         <label>Tipo da faixa (Multiple select)</label>
         <input id="ed-tipos" placeholder="Ex: A-side, B-side, Unit">
@@ -1397,8 +1393,7 @@ async function deleteDisco() {
         <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
       </form>
 
-      <button class="btn-main" style="background:#f44336;"
-              onclick="deleteDisco()">
+      <button class="btn-main" style="background:#f44336;" onclick="deleteDisco()">
         Deletar Disco
       </button>
     </div>
