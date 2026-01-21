@@ -1,122 +1,331 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>CTL48 Admin v29 (Search Added)</title>
 
-  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CTL48 Admin v36 (Reorder Tracks)</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet" />
   <script src="https://html2canvas.hertzen.com/dist/html2canvas.min.js"></script>
 
   <style>
-    :root { --primary: #e91e63; --bg: #f4f6f8; --card: #fff; }
-    body { background:var(--bg); margin:0; padding-bottom:100px; font-family:'Roboto', sans-serif; color:#333; }
-    .header { background: linear-gradient(135deg, var(--primary), #ff5f9e); padding:15px; text-align:center; color:white; font-weight:900; position:sticky; top:0; z-index:100; box-shadow:0 4px 10px rgba(0,0,0,0.1); }
+    :root {
+      --primary: #e91e63;
+      --bg: #f4f6f8;
+    }
 
-    .section { display:none; padding:15px; animation:fadeIn 0.25s; }
-    .section.active { display:block; }
-    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+    body {
+      background: var(--bg);
+      margin: 0;
+      padding-bottom: 100px;
+      font-family: 'Roboto', sans-serif;
+      color: #333;
+    }
 
-    .card { background:white; padding:20px; border-radius:12px; margin-bottom:15px; box-shadow:0 2px 10px rgba(0,0,0,0.05); }
+    .header {
+      background: linear-gradient(135deg, var(--primary), #ff5f9e);
+      padding: 15px;
+      text-align: center;
+      color: #fff;
+      font-weight: 900;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, .1);
+    }
 
-    label { display:block; font-size:0.85rem; font-weight:900; color:#444; margin-top:12px; margin-bottom:6px; text-align:left; text-transform:uppercase; letter-spacing:.4px; }
+    .section {
+      display: none;
+      padding: 15px;
+      animation: fadeIn .25s;
+    }
+
+    .section.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, .05);
+    }
+
+    label {
+      display: block;
+      font-size: .85rem;
+      font-weight: 900;
+      color: #444;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+      letter-spacing: .4px;
+    }
+
     input, select, textarea {
-      width:100%; padding:12px; border:1px solid #ddd; border-radius:10px;
-      background:#fff; font-size:1rem; transition:.2s; color:#333;
-      appearance: none; -webkit-appearance: none;
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fff;
+      font-size: 1rem;
+      transition: .2s;
+      color: #333;
+      appearance: none;
+      -webkit-appearance: none;
     }
-    textarea { resize:vertical; }
 
-    .btn-main { width:100%; padding:15px; background:var(--primary); color:white; border:none; border-radius:50px; font-weight:900; margin-top:16px; font-size:1rem; cursor:pointer; }
-    .btn-main:active { transform:scale(.98); }
-    
-    .btn-ghost{ width:100%; padding:15px; border-radius:50px; font-weight:900; border:2px solid #333; background:#fff; color:#333; cursor:pointer; }
-    .btn-ghost:active{ transform:scale(.98); }
+    textarea { resize: vertical; }
 
-    .input-group { display:flex; gap:8px; align-items:center; margin-top:5px; }
-    .input-group input { margin-top:0; }
-    .btn-upload { background:#333; color:white; border:none; padding:12px 15px; border-radius:10px; cursor:pointer; white-space:nowrap; }
-    .btn-upload i { font-size:1.1rem; }
-    .upload-status { font-size:0.78rem; color:#e91e63; margin-top:6px; font-weight:900; min-height:15px; }
+    .btn-main {
+      width: 100%;
+      padding: 15px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 50px;
+      font-weight: 900;
+      margin-top: 16px;
+      font-size: 1rem;
+      cursor: pointer;
+    }
 
-    /* NAV */
-    .bottom-nav { position:fixed; bottom:0; width:100%; height:70px; background:white; display:flex; border-top:1px solid #eee; z-index:1000; }
-    .nav-item { flex:1; border:none; background:none; color:#999; display:flex; flex-direction:column; align-items:center; justify-content:center; font-size:0.7rem; font-weight:900; }
-    .nav-item.active { color:var(--primary); }
-    .nav-item i { font-size:1.4rem; margin-bottom:4px; }
+    .btn-main:active { transform: scale(.98); }
 
-    /* LOADING */
-    #loading-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.92); z-index:5000; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
-    .spinner { border:5px solid #f3f3f3; border-top:5px solid var(--primary); border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite; margin-bottom:20px; }
-    @keyframes spin { 0% { transform:rotate(0deg);} 100% { transform:rotate(360deg);} }
-    #loading-text { font-weight:900; color:var(--primary); }
-    #loading-log { font-size:0.85rem; color:#666; margin-top:10px; max-height:140px; overflow-y:auto; width:86%; }
+    .btn-ghost {
+      width: 100%;
+      padding: 15px;
+      border-radius: 50px;
+      font-weight: 900;
+      border: 2px solid #333;
+      background: #fff;
+      color: #333;
+      cursor: pointer;
+    }
 
-    /* BUILDER MODAL */
-    .modal-overlay { position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:2000; display:none; flex-direction:column; overflow-y:auto; }
-    .modal-overlay.active { display:flex; animation:slideUp .25s; }
-    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .btn-ghost:active { transform: scale(.98); }
 
-    .modal-header { padding:15px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:white; z-index:10; }
-    .modal-header button{ border:none; background:none; font-size:1.6rem; cursor:pointer; }
+    .input-group {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-top: 5px;
+    }
 
-    .stage-area{ padding:20px; }
-    .builder-topnote{ text-align:center; font-weight:900; color:#e91e63; font-size:0.9rem; margin-bottom:12px; }
+    .input-group input { margin-top: 0; }
 
-    /* MANUAL ROWS PANEL */
-    .rows-panel{ margin-top:10px; padding:12px; border:1px solid #eee; border-radius:12px; background:#fafafa; }
-    .rows-panel .rowline{ display:flex; gap:10px; align-items:center; margin-top:10px; }
-    .row-tag{ min-width:92px; font-size:0.75rem; font-weight:900; color:#444; text-transform:uppercase; letter-spacing:.4px; }
-    .row-sum{ margin-top:10px; font-size:0.85rem; font-weight:900; color:#666; }
-    .row-sum b{ color:#e91e63; }
+    .btn-upload {
+      background: #333;
+      color: #fff;
+      border: none;
+      padding: 12px 15px;
+      border-radius: 10px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
 
-    /* Formation rendering */
-    .slots-container { display:flex; flex-wrap:wrap; justify-content:center; gap:10px; padding:18px; border:2px dashed #ddd; margin-top:15px; border-radius:12px; background:#fafafa; }
-    .rows-wrap{ display:flex; flex-direction:column; gap:14px; width: 100%; }
-    .slots-row{ display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+    .btn-upload i { font-size: 1.1rem; }
 
-    .slot { width:74px; text-align:center; position:relative; cursor:pointer; transition:transform .2s; }
-    .slot:active { transform:scale(.92); }
-    .slot-circle { width:64px; height:64px; border-radius:50%; background:white; border:2px solid #ddd; display:flex; justify-content:center; align-items:center; margin:0 auto; overflow:hidden; transition:.2s; position:relative; }
-    
-    /* Visual de Center ATIVO */
-    .slot.is-center .slot-circle { 
-        border-color: #e91e63; 
-        z-index: 2; 
-        box-shadow: 0 0 0 4px rgba(233, 30, 99, 0.4);
-        transform: scale(1.05);
+    .upload-status {
+      font-size: .78rem;
+      color: #e91e63;
+      margin-top: 6px;
+      font-weight: 900;
+      min-height: 15px;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      height: 70px;
+      background: #fff;
+      display: flex;
+      border-top: 1px solid #eee;
+      z-index: 1000;
+    }
+
+    .nav-item {
+      flex: 1;
+      border: none;
+      background: none;
+      color: #999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: .7rem;
+      font-weight: 900;
+    }
+
+    .nav-item.active { color: var(--primary); }
+    .nav-item i { font-size: 1.4rem; margin-bottom: 4px; }
+
+    #loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, .92);
+      z-index: 5000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+
+    .spinner {
+      border: 5px solid #f3f3f3;
+      border-top: 5px solid var(--primary);
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+      margin-bottom: 20px;
+    }
+
+    @keyframes spin { 0% { transform: rotate(0) } 100% { transform: rotate(360deg) } }
+
+    #loading-text { font-weight: 900; color: var(--primary); }
+    #loading-log { font-size: .85rem; color: #666; margin-top: 10px; max-height: 160px; overflow-y: auto; width: 86%; }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #fff;
+      z-index: 2000;
+      display: none;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .modal-overlay.active { display: flex; animation: slideUp .25s; }
+
+    @keyframes slideUp { from { transform: translateY(100%) } to { transform: translateY(0) } }
+
+    .modal-header {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 10;
+    }
+
+    .modal-header button { border: none; background: none; font-size: 1.6rem; cursor: pointer; }
+
+    .stage-area { padding: 20px; }
+    .builder-topnote { text-align: center; font-weight: 900; color: #e91e63; font-size: .9rem; margin-bottom: 12px; }
+
+    .rows-panel { margin-top: 10px; padding: 12px; border: 1px solid #eee; border-radius: 12px; background: #fafafa; }
+    .rows-panel .rowline { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+    .row-tag { min-width: 92px; font-size: .75rem; font-weight: 900; color: #444; text-transform: uppercase; letter-spacing: .4px; }
+    .row-sum { margin-top: 10px; font-size: .85rem; font-weight: 900; color: #666; }
+    .row-sum b { color: #e91e63; }
+
+    .slots-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; padding: 18px; border: 2px dashed #ddd; margin-top: 15px; border-radius: 12px; background: #fafafa; }
+    .rows-wrap { display: flex; flex-direction: column; gap: 14px; width: 100%; }
+    .slots-row { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; }
+    .slot { width: 74px; text-align: center; position: relative; cursor: pointer; transition: transform .2s; }
+    .slot:active { transform: scale(.92); }
+    .slot-circle { width: 64px; height: 64px; border-radius: 50%; background: #fff; border: 2px solid #ddd; display: flex; justify-content: center; align-items: center; margin: 0 auto; overflow: hidden; transition: .2s; position: relative; }
+    .slot.is-center .slot-circle { border-color: #e91e63; z-index: 2; box-shadow: 0 0 0 4px rgba(233, 30, 99, .4); transform: scale(1.05); }
+    .slot-badge { position: absolute; bottom: 18px; right: 2px; background: #333; color: #fff; width: 20px; height: 20px; font-size: .65rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; z-index: 5; border: 2px solid #fff; font-weight: 900; }
+    .slot.is-center .slot-badge { background: #e91e63; }
+    .slot img { width: 100%; height: 100%; object-fit: cover; }
+    .slot-name { font-size: .68rem; margin-top: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 900; }
+
+    .selection-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, .8); z-index: 3000; display: none; justify-content: center; align-items: center; }
+    .selection-box { background: #fff; width: 90%; max-height: 80vh; border-radius: 15px; padding: 20px; display: flex; flex-direction: column; }
+    .selection-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); gap: 10px; overflow-y: auto; padding: 10px; }
+    .select-item { text-align: center; cursor: pointer; padding: 6px; border-radius: 10px; transition: .2s; position: relative; user-select: none; }
+    .select-item:hover { background: #f5f5f5; }
+    .select-item img { width: 66px; height: 66px; border-radius: 50%; object-fit: cover; border: 2px solid #eee; }
+    .select-item div { font-size: .72rem; font-weight: 900; margin-top: 6px; line-height: 1.15; }
+    .select-item.is-picked { background: #fff0f5; outline: 2px solid #e91e63; box-shadow: 0 0 0 4px rgba(233, 30, 99, .12); }
+    .select-item.is-picked::after { content: "✓"; position: absolute; top: 6px; right: 8px; width: 22px; height: 22px; border-radius: 999px; background: #e91e63; color: #fff; font-weight: 900; display: flex; align-items: center; justify-content: center; font-size: .85rem; }
+
+    /* TRACK ITEM + REORDER BUTTONS */
+    .track-item {
+      background: #fff0f5;
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-top: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border: 1px solid #ffc1e3;
+      gap: 10px;
     }
     
-    .slot-badge { position:absolute; bottom:18px; right:2px; background:#333; color:white; width:20px; height:20px; font-size:.65rem; border-radius:50%; display:flex; align-items:center; justify-content:center; z-index:5; border:2px solid white; font-weight:900; }
-    .slot.is-center .slot-badge { background:#e91e63; }
-    .slot img { width:100%; height:100%; object-fit:cover; }
-    .slot-name { font-size:0.68rem; margin-top:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-weight:900; }
+    .track-info { flex: 1; }
 
-    /* MEMBER PICKER */
-    .selection-modal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:3000; display:none; justify-content:center; align-items:center; }
-    .selection-box { background:white; width:90%; max-height:80vh; border-radius:15px; padding:20px; display:flex; flex-direction:column; }
-    .selection-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(78px, 1fr)); gap:10px; overflow-y:auto; padding:10px; }
-    .select-item { text-align:center; cursor:pointer; padding:6px; border-radius:10px; transition:.2s; }
-    .select-item:hover { background:#f5f5f5; }
-    .select-item img { width:66px; height:66px; border-radius:50%; object-fit:cover; border:2px solid #eee; }
-    .select-item div { font-size:0.72rem; font-weight:900; margin-top:6px; line-height:1.15; }
+    .track-actions {
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
 
-    /* tracks list */
-    .track-item { background:#fff0f5; padding:12px; border-radius:10px; margin-top:10px; display:flex; justify-content:space-between; align-items:center; border:1px solid #ffc1e3; }
-    .track-center-badge { font-size:0.78rem; color:#e91e63; font-weight:900; }
-    .track-badges { display:flex; gap:6px; flex-wrap:wrap; }
-    .badge { font-size:.72rem; font-weight:900; border-radius:999px; padding:4px 10px; background:#333; color:#fff; text-transform:uppercase; letter-spacing:.3px; }
-    
-    /* SEARCH INPUTS */
-    .search-input { width:100%; padding:10px 12px; border:1px solid #ddd; border-radius:8px; font-weight:700; margin-bottom:10px; font-size:0.9rem; }
+    .btn-icon {
+        border: none;
+        background: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        color: #555;
+        font-size: 0.9rem;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        transition: 0.2s;
+    }
+    .btn-icon:hover { background: #eee; }
+    .btn-icon.delete { color: #f44336; background: #ffebee; }
+    .btn-icon:disabled { opacity: 0.3; cursor: default; }
+
+    .badge { font-size: .72rem; font-weight: 900; border-radius: 999px; padding: 4px 10px; background: #333; color: #fff; text-transform: uppercase; letter-spacing: .3px; display: inline-block; margin-left: 6px; }
+    .track-center-badge { font-size: .78rem; color: #e91e63; font-weight: 900; margin-top: 6px; }
+    .search-input { width: 100%; padding: 10px 12px; border: 1px solid #ddd; border-radius: 8px; font-weight: 700; margin-bottom: 10px; font-size: .9rem; }
+
+    /* PARTICIPAÇÕES EDITOR */
+    .part-card { border: 1px solid #eee; border-radius: 12px; padding: 12px; background: #fafafa; margin-bottom: 10px; }
+    .part-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+    .part-title { font-weight: 900; color: #333; }
+    .part-meta { font-size: .75rem; color: #777; margin-top: 2px; }
+    .part-actions { display: flex; gap: 8px; }
+    .part-btn { border: none; cursor: pointer; font-weight: 900; border-radius: 999px; padding: 8px 10px; }
+    .part-btn-danger { background: #f44336; color: #fff; }
+    .part-btn-soft { background: #333; color: #fff; }
+    .part-tracks { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+    .part-track { background: #fff; border: 1px solid #eee; border-radius: 10px; padding: 10px; display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .part-track b { font-size: .9rem; }
+    .part-track small { color: #777; display: block; margin-top: 2px; }
   </style>
 </head>
+
 <body>
 
-  <div class="header">CTL48 Admin v29</div>
+  <div class="header">CTL48 Admin v36</div>
 
-  <div id="loading-overlay" style="display: none;">
+  <div id="loading-overlay">
     <div class="spinner"></div>
     <div id="loading-text">Processando...</div>
     <div id="loading-log"></div>
@@ -126,10 +335,15 @@
     <div class="card">
       <h2>📢 Nova Notícia</h2>
       <form onsubmit="saveNews(event)">
-        <label>Título</label><input id="n-title" required>
+        <label>Título</label><input id="n-title" required />
         <label>Categoria</label>
-        <select id="n-cat"><option>Release</option><option>Event</option><option>Notice</option><option>Theater</option></select>
-        <label>Data</label><input type="date" id="n-date" required>
+        <select id="n-cat">
+          <option>Release</option>
+          <option>Event</option>
+          <option>Notice</option>
+          <option>Theater</option>
+        </select>
+        <label>Data</label><input type="date" id="n-date" required />
         <label>Conteúdo</label><textarea id="n-text" rows="5"></textarea>
         <button class="btn-main">Publicar</button>
       </form>
@@ -139,36 +353,39 @@
   <div id="tab-disco" class="section active">
     <div class="card">
       <h2>💿 Discografia</h2>
-      <div style="background:#fff0f5; color:#c2185b; padding:10px; border-radius:8px; font-size:0.8rem; margin-bottom:15px; border:1px solid #f8bbd0;">
-        💡 Ao salvar, o sistema atualizará automaticamente o perfil de todos os membros e gerará o layout bonito para o App.
+      <div style="background:#fff0f5; color:#c2185b; padding:10px; border-radius:8px; font-size:.8rem; margin-bottom:15px; border:1px solid #f8bbd0;">
+        💡 Cria lançamento novo com tracks + formação.
       </div>
+
       <form onsubmit="saveDisco(event)">
-        <label>Título</label><input id="d-title" required placeholder="Ex: 10th Single">
+        <label>Título</label><input id="d-title" required placeholder="Ex: 10th Single" />
+
         <div style="display:flex; gap:10px;">
-          <div style="flex:1">
-            <label>Tipo</label>
-            <select id="d-type"><option>Single</option><option>Album</option><option>Stage</option></select>
-          </div>
-          <div style="flex:1">
-            <label>Data</label><input type="date" id="d-date" required>
-          </div>
+          <div style="flex:1"><label>Tipo</label><select id="d-type">
+              <option>Single</option>
+              <option>Album</option>
+              <option>Stage</option>
+            </select></div>
+          <div style="flex:1"><label>Data</label><input type="date" id="d-date" required /></div>
         </div>
 
         <label>Center (Automático)</label>
-        <input id="d-center" placeholder="Automático..." readonly style="background:#eee;">
+        <input id="d-center" placeholder="Automático..." readonly style="background:#eee;" />
 
         <label>Capa (URL ou Upload)</label>
         <div class="input-group">
-          <input id="d-cover" placeholder="https://..." required>
-          <input type="file" id="d-cover-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'd-cover', 'd-upload-status')">
+          <input id="d-cover" placeholder="https://..." required />
+          <input type="file" id="d-cover-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'd-cover', 'd-upload-status')" />
           <button type="button" class="btn-upload" onclick="document.getElementById('d-cover-file').click()"><i class="fas fa-upload"></i></button>
         </div>
         <div id="d-upload-status" class="upload-status"></div>
 
         <div style="margin-top:16px; border-top:1px solid #eee; padding-top:14px;">
           <label>Músicas & Formações</label>
-          <div id="tracks-list"><div style="text-align:center;color:#999;font-size:0.85rem;">Vazio</div></div>
-          <button type="button" class="btn-main" style="background:#333; margin-top:10px;" onclick="openBuilder()">+ Adicionar Música</button>
+          <div id="tracks-list">
+            <div style="text-align:center;color:#999;font-size:.85rem;">Vazio</div>
+          </div>
+          <button type="button" class="btn-main" style="background:#333; margin-top:10px;" onclick="openBuilder(false)">+ Adicionar Música</button>
         </div>
 
         <button class="btn-main">Salvar Tudo</button>
@@ -180,34 +397,40 @@
     <div class="card">
       <h2>👤 Novo Membro</h2>
       <form onsubmit="saveMember(event)">
-        <label>Nome</label><input id="m-name" required>
+        <label>Nome</label><input id="m-name" required />
         <div style="display:flex; gap:10px;">
           <div style="flex:1">
             <label>Time</label>
-            <select id="m-team"><option>Team C</option><option>Team T</option><option>Team L</option><option>Team Kenkyuusei</option></select>
+            <select id="m-team">
+              <option>Team C</option>
+              <option>Team T</option>
+              <option>Team L</option>
+              <option>Team Kenkyuusei</option>
+            </select>
           </div>
           <div style="flex:1">
-            <label>Geração (Nº)</label><input type="number" id="m-gen" required placeholder="Ex: 1">
+            <label>Geração (Nº)</label><input type="number" id="m-gen" required placeholder="Ex: 1" />
           </div>
         </div>
-        
+
         <label>Status</label>
         <select id="m-status-select">
-            <option value="Ativa">Ativa</option>
-            <option value="Graduada">Graduada</option>
-            <option value="Demitida">Demitida</option>
-            <option value="Expulsa">Expulsa</option>
+          <option value="Ativa">Ativa</option>
+          <option value="Graduada">Graduada</option>
+          <option value="Demitida">Demitida</option>
+          <option value="Expulsa">Expulsa</option>
         </select>
 
         <label>Foto (URL ou Upload)</label>
         <div class="input-group">
-          <input id="m-photo" placeholder="https://..." required>
-          <input type="file" id="m-photo-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'm-photo', 'm-upload-status')">
+          <input id="m-photo" placeholder="https://..." required />
+          <input type="file" id="m-photo-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'm-photo', 'm-upload-status')" />
           <button type="button" class="btn-upload" onclick="document.getElementById('m-photo-file').click()"><i class="fas fa-upload"></i></button>
         </div>
         <div id="m-upload-status" class="upload-status"></div>
+
         <label>Biografia</label>
-        <textarea id="m-bio" rows="4" placeholder="Escreva a biografia da integrante..."></textarea>
+        <textarea id="m-bio" rows="4" placeholder="Escreva a biografia..."></textarea>
 
         <button class="btn-main">Cadastrar</button>
       </form>
@@ -217,23 +440,24 @@
   <div id="tab-manage" class="section">
     <div class="card">
       <h2>✏️ Editar Membro</h2>
-      
-      <input type="text" id="manage-search" class="search-input" placeholder="🔍 Buscar membro para editar..." oninput="renderManageSelect(this.value)">
-      <select id="manage-selector" onchange="fillEditForm()"><option value="">Carregando...</option></select>
+      <input type="text" id="manage-search" class="search-input" placeholder="🔍 Buscar membro..." oninput="renderManageSelect(this.value)" />
+      <select id="manage-selector" onchange="fillEditForm()">
+        <option value="">Carregando...</option>
+      </select>
 
-      <div id="edit-form" style="display: none; margin-top: 15px;">
-        <img id="e-preview" src="" style="width:80px;height:80px;border-radius:50%; margin-bottom:10px; border:2px solid #eee;">
+      <div id="edit-form" style="display:none; margin-top:15px;">
+        <img id="e-preview" src="" style="width:80px;height:80px;border-radius:50%; margin-bottom:10px; border:2px solid #eee;" />
+
         <form onsubmit="updateMember(event)">
-          <label>Nome</label><input id="e-name" required>
-
+          <label>Nome</label><input id="e-name" required />
           <div style="display:flex; gap:10px;">
-            <div style="flex:1">
-              <label>Time</label>
-              <select id="e-team"><option>Team C</option><option>Team T</option><option>Team L</option><option>Team Kenkyuusei</option></select>
-            </div>
-            <div style="flex:1">
-              <label>Geração (Nº)</label><input type="number" id="e-gen" required placeholder="Ex: 1">
-            </div>
+            <div style="flex:1"><label>Time</label><select id="e-team">
+                <option>Team C</option>
+                <option>Team T</option>
+                <option>Team L</option>
+                <option>Team Kenkyuusei</option>
+              </select></div>
+            <div style="flex:1"><label>Geração (Nº)</label><input type="number" id="e-gen" required placeholder="Ex: 1" /></div>
           </div>
 
           <label>Status</label>
@@ -246,29 +470,36 @@
 
           <label>Foto (URL ou Upload)</label>
           <div class="input-group">
-            <input id="e-photo" required onchange="document.getElementById('e-preview').src=this.value">
-            <input type="file" id="e-photo-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'e-photo', 'e-upload-status')">
+            <input id="e-photo" required onchange="document.getElementById('e-preview').src=this.value" />
+            <input type="file" id="e-photo-file" style="display:none" accept="image/*" onchange="uploadImage(this, 'e-photo', 'e-upload-status')" />
             <button type="button" class="btn-upload" onclick="document.getElementById('e-photo-file').click()"><i class="fas fa-upload"></i></button>
           </div>
           <div id="e-upload-status" class="upload-status"></div>
-          
+
           <label>Biografia</label>
-          <textarea id="e-bio" rows="5" placeholder="Escreva a biografia..."></textarea>
+          <textarea id="e-bio" rows="5"></textarea>
 
           <label>Galeria (URLs, 1 por linha)</label>
           <textarea id="e-gallery" rows="5" placeholder="https://...&#10;https://..."></textarea>
 
           <label>Upload Fotos (galeria)</label>
           <div class="input-group">
-            <input type="file" id="e-gallery-files" hidden accept="image/*" multiple onchange="uploadGalleryFiles(this)">
-            <button type="button" class="btn-upload" onclick="document.getElementById('e-gallery-files').click()">
-              <i class="fas fa-images"></i>
-            </button>
+            <input type="file" id="e-gallery-files" hidden accept="image/*" multiple onchange="uploadGalleryFiles(this)" />
+            <button type="button" class="btn-upload" onclick="document.getElementById('e-gallery-files').click()"><i class="fas fa-images"></i></button>
           </div>
           <div id="e-gallery-status" class="upload-status"></div>
 
           <label>Participações (JSON)</label>
           <textarea id="e-part" rows="3"></textarea>
+
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button type="button" class="btn-ghost" style="flex:1; font-size:.9rem;" onclick="openPartEditor()">Editar Participações (Visual)</button>
+            <button type="button" class="btn-main" style="flex:1; background:#f44336; margin-top:0;" onclick="purgeLegacyParticipations()">Limpar antigas (sem discoId)</button>
+          </div>
+
+          <div style="font-size:.75rem; color:#777; margin-top:8px; line-height:1.3;">
+            💡 “Antigas” = entradas que não têm <b>discoId</b> (geralmente do jeito velho).
+          </div>
 
           <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
         </form>
@@ -286,68 +517,87 @@
 
       <div id="disco-edit-form" style="display:none; margin-top:15px;">
         <form onsubmit="updateDisco(event)">
-          <label>Título</label><input id="ed-title" required readonly style="background:#eee; color:#777;">
-          <div style="font-size:0.75rem; color:#e91e63; margin-bottom:10px;">* Título não pode ser alterado para garantir a integridade do histórico.</div>
-          
+          <label>Título (Apenas leitura)</label>
+          <input id="ed-title" required readonly style="background:#eee; color:#777;" />
+          <div style="font-size:.75rem; color:#e91e63; margin-bottom:10px;">* O título é só visual. O histórico usa o ID do disco.</div>
+
           <div style="display:flex; gap:10px;">
-            <div style="flex:1"><label>Tipo</label><select id="ed-type"><option>Single</option><option>Album</option><option>Stage</option></select></div>
-            <div style="flex:1"><label>Data</label><input type="date" id="ed-date" required></div>
+            <div style="flex:1"><label>Tipo</label><select id="ed-type">
+                <option>Single</option>
+                <option>Album</option>
+                <option>Stage</option>
+              </select></div>
+            <div style="flex:1"><label>Data</label><input type="date" id="ed-date" required /></div>
           </div>
-          <label>Center</label><input id="ed-center">
+
+          <label>Center (Auto)</label><input id="ed-center" />
           <label>Capa (URL)</label>
           <div class="input-group">
-            <input id="ed-cover" placeholder="https://..." required>
-            <input type="file" id="ed-cover-file" hidden accept="image/*" onchange="uploadImage(this, 'ed-cover', 'ed-upload-status')">
+            <input id="ed-cover" placeholder="https://..." required />
+            <input type="file" id="ed-cover-file" hidden accept="image/*" onchange="uploadImage(this, 'ed-cover', 'ed-upload-status')" />
             <button type="button" class="btn-upload" onclick="document.getElementById('ed-cover-file').click()"><i class="fas fa-upload"></i></button>
           </div>
           <div id="ed-upload-status" class="upload-status"></div>
-          
-          <div style="margin-top:15px; border-top:1px solid #eee; padding-top:10px;">
-             <label>Músicas (Detectadas)</label>
-             <div id="ed-tracks-list" style="margin-bottom:10px;"></div>
-             <button type="button" class="btn-ghost" style="font-size:0.8rem; padding:10px;" onclick="openBuilder()">+ Adicionar Nova Música</button>
+
+          <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
+            <label style="color:#2196f3;">Lista de Músicas (Editar)</label>
+            <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Use as setas para reordenar.</p>
+            <div id="ed-tracks-list" style="margin-bottom:15px;"></div>
+            <button type="button" class="btn-ghost" style="font-size:.9rem;" onclick="openBuilder(true)">+ Adicionar Nova Música</button>
           </div>
 
-          <label>Tipo da faixa (Calculado ao Salvar)</label><input id="ed-tipos" placeholder="Ex: A-side, B-side">
-          <textarea id="ed-tracklist" style="display:none;"></textarea>
-
-          <button class="btn-main" style="background:#2196f3;">Salvar Alterações (Regerar HTML)</button>
+          <button class="btn-main" style="background:#2196f3;">Salvar Alterações</button>
         </form>
 
-        <div style="margin-top:20px; border-top:1px solid #eee; padding-top:15px;">
-            <p style="color:#f44336; font-weight:bold; font-size:0.9rem;">Zona de Perigo</p>
-            <p style="font-size:0.8rem; color:#666; margin-bottom:10px;">Ao deletar este disco, ele será removido do histórico de todos os membros.</p>
-            <button class="btn-main" style="background:#f44336; margin-top:0;" onclick="deleteDisco()">Deletar Disco (Cascade)</button>
+        <div style="margin-top:25px; border-top:1px solid #eee; padding-top:15px;">
+          <p style="color:#f44336; font-weight:bold; font-size:.9rem;">Zona de Perigo</p>
+          <button class="btn-main" style="background:#f44336; margin-top:0;" onclick="deleteDisco()">Deletar Disco (Cascade)</button>
         </div>
       </div>
     </div>
   </div>
 
-  <div id="builder-modal" class="modal-overlay" style="display: none;">
+  <div id="builder-modal" class="modal-overlay">
     <div class="modal-header">
       <span style="font-weight:900;">Formação</span>
       <button onclick="closeBuilder(true)">✕</button>
     </div>
-    <div id="step-1" style="padding: 20px; display: block;">
-      <label>Música</label><input id="b-song" placeholder="Nome da faixa">
+
+    <div id="step-1" style="padding:20px; display:block;">
+      <label>Música</label><input id="b-song" placeholder="Nome da faixa" />
       <label>Tipo da faixa</label>
       <select id="b-kind" onchange="toggleKindRules()">
-        <option value="A-side">A-side</option><option value="B-side">B-side</option><option value="Undergirls">Undergirls</option><option value="Unit">Unit</option><option value="Solo">Solo</option>
+        <option value="A-side">A-side</option>
+        <option value="B-side">B-side</option>
+        <option value="Undergirls">Undergirls</option>
+        <option value="Unit">Unit</option>
+        <option value="Solo">Solo</option>
       </select>
-      <div id="unit-fields" style="display:none;"><label>Nome da Unit</label><input id="b-unit-name" placeholder="Ex: Under Girls"></div>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
-        <div><label>Total (Membros)</label><input type="number" id="b-total" value="16" min="1" oninput="syncRowsUI()"></div>
-        <div><label>Centers</label><input type="number" id="b-centers" value="1" min="0" oninput="syncRowsUI()"></div>
+
+      <div id="unit-fields" style="display:none;">
+        <label>Nome da Unit</label><input id="b-unit-name" placeholder="Ex: Under Girls" />
       </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:8px;">
+        <div><label>Total (Membros)</label><input type="number" id="b-total" value="16" min="1" oninput="syncRowsUI()" /></div>
+        <div><label>Centers</label><input type="number" id="b-centers" value="1" min="0" oninput="syncRowsUI()" /></div>
+      </div>
+
       <div id="manual-rows" class="rows-panel">
         <label>Quantidade de fileiras</label>
-        <select id="b-rowcount" onchange="renderRowInputs()"><option value="2">2</option><option value="3" selected>3</option><option value="4">4</option></select>
+        <select id="b-rowcount" onchange="renderRowInputs()">
+          <option value="2">2</option>
+          <option value="3" selected>3</option>
+          <option value="4">4</option>
+        </select>
         <div id="row-inputs"></div>
-        <div class="row-sum">Soma: <b id="rows-sum" style="color: rgb(0, 184, 148);">16</b> / <b id="rows-total">16</b></div>
+        <div class="row-sum">Soma: <b id="rows-sum" style="color:#00b894;">16</b> / <b id="rows-total">16</b></div>
       </div>
+
       <button class="btn-main" onclick="startStage()">Montar</button>
     </div>
-    <div id="step-2" class="stage-area" style="display: none;">
+
+    <div id="step-2" class="stage-area" style="display:none;">
       <div class="builder-topnote">Toque na bolinha para escolher!</div>
       <div id="slots" class="slots-container"></div>
       <div style="display:flex; gap:10px; margin-top:16px;">
@@ -358,17 +608,67 @@
     </div>
   </div>
 
-  <div id="member-select-modal" class="selection-modal" style="display: none;">
+  <div id="member-select-modal" class="selection-modal">
     <div class="selection-box">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <h3 style="margin:0;">Escolha</h3>
         <button onclick="closeMemberModal()" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">✕</button>
       </div>
-      
-      <input id="member-search" class="search-input" placeholder="Buscar membro..." oninput="renderMemberSelectionList(this.value)">
-      
+
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <select id="member-filter-team" onchange="renderMemberSelectionList()" style="flex:1;">
+          <option value="">Todos os times</option>
+          <option value="Team C">Team C</option>
+          <option value="Team T">Team T</option>
+          <option value="Team L">Team L</option>
+          <option value="Team Kenkyuusei">Team Kenkyuusei</option>
+        </select>
+
+        <select id="member-filter-gen" onchange="renderMemberSelectionList()" style="flex:1;">
+          <option value="">Todas as gerações</option>
+          <option value="1">1ª</option>
+          <option value="2">2ª</option>
+          <option value="3">3ª</option>
+          <option value="4">4ª</option>
+          <option value="5">5ª</option>
+          <option value="6">6ª</option>
+          <option value="7">7ª</option>
+          <option value="8">8ª</option>
+          <option value="9">9ª</option>
+          <option value="10">10ª</option>
+        </select>
+      </div>
+
+      <input id="member-search" class="search-input" placeholder="Buscar membro..." oninput="renderMemberSelectionList(this.value)" />
       <div id="selection-list" class="selection-grid"></div>
       <button onclick="clearSlot()" class="btn-main" style="background:#f44336; margin-top:10px;">Remover (Vazio)</button>
+    </div>
+  </div>
+
+  <div id="part-editor-modal" class="selection-modal" style="display:none;">
+    <div class="selection-box" style="max-width:980px; width:95%;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="margin:0;">Editar Participações</h3>
+        <button onclick="closePartEditor()" style="border:none;background:none;font-size:1.5rem;cursor:pointer;">✕</button>
+      </div>
+
+      <input id="part-search" class="search-input" placeholder="Buscar por single ou música..." oninput="renderPartEditor()" />
+
+      <div style="display:flex; gap:10px; margin-bottom:10px;">
+        <button type="button" class="btn-ghost" style="flex:1; font-size:.9rem;" onclick="removeAllParticipations()">Remover tudo</button>
+        <button type="button" class="btn-ghost" style="flex:1; font-size:.9rem;" onclick="purgeLegacyParticipations(true)">Remover antigas (sem discoId)</button>
+      </div>
+
+      <div id="part-editor-list" style="overflow:auto; max-height:55vh; padding-right:4px;"></div>
+
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button type="button" class="btn-ghost" style="flex:1;" onclick="copyPartsToTextarea()">Salvar no campo (textarea)</button>
+        <button type="button" class="btn-main" style="flex:1; background:#2196f3; margin-top:0;" onclick="copyPartsToTextarea(); closePartEditor();">Salvar e fechar</button>
+      </div>
+
+      <div style="font-size:.75rem; color:#777; margin-top:10px; line-height:1.35;">
+        ✅ Isso só atualiza o JSON do campo <b>Participações</b>. Depois clique em <b>Salvar Alterações</b> do membro.
+      </div>
     </div>
   </div>
 
@@ -381,470 +681,844 @@
   </div>
 
   <script>
+    // === CONFIG ===
     const API_KEY = 'patzIKAjwQnDtoIme.1aca2da0458d3f76cb528a285652d695a5acd97dee0ed3af3ddcbbeff2daaac6';
     const BASE_ID = 'appVh4GZeAWJ06uey';
     const T_NEWS = "Noticias";
     const T_DISCO = "Discografia";
-    const T_MEMBERS = "tblaFURTBeUVGx6IW"; 
-    const IMGBB_KEY = "81f7ca81cf22d739de576bd1dac7dcc2"; 
+    const T_MEMBERS = "tblaFURTBeUVGx6IW";
+    const IMGBB_KEY = "81f7ca81cf22d739de576bd1dac7dcc2";
 
+    // === STATE ===
     let allMembers = [];
     let allDiscos = [];
     let activeSlot = null;
     let tracksBuffer = [];
+    let builderIsEditMode = false;
+    let currentEditingDiscoId = null; 
 
-    function $(id){ return document.getElementById(id); }
-    function val(id){ const el = $(id); return el ? el.value : ""; }
-    const sleep = (ms)=> new Promise(r=>setTimeout(r, ms));
+    // === HELPERS ===
+    function $(id) { return document.getElementById(id); }
+    function val(id) { const el = $(id); return el ? el.value : ""; }
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-    function showLoading(show, txt){
+    function getField(fd, ...names) {
+      for (const n of names) {
+        if (fd && fd[n] !== undefined && fd[n] !== null && String(fd[n]).trim() !== "") return fd[n];
+      }
+      return "";
+    }
+
+    function genToNumber(g) {
+      if (g === null || g === undefined) return '';
+      const s = String(g).trim();
+      if (!s) return '';
+      const n = s.match(/\d+/)?.[0] || '';
+      return n;
+    }
+
+    function genToStored(g) {
+      const n = genToNumber(g);
+      if (!n) return '';
+      return `${n}ª Geração`;
+    }
+
+    function formatGen(g) {
+      const n = genToNumber(g);
+      if (!n) return '';
+      return `${n}ª Gen`;
+    }
+
+    function showLoading(show, txt) {
       const el = $('loading-overlay');
       el.style.display = show ? 'flex' : 'none';
       if (txt) $('loading-text').innerText = txt;
       $('loading-log').innerHTML = '';
     }
-    function log(msg){ $('loading-log').innerHTML += `<div>${msg}</div>`; }
 
-    function nav(id, el){
-      document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-      $('tab-'+id).classList.add('active');
+    function log(msg) { $('loading-log').innerHTML += `<div>${msg}</div>`; }
+
+    function nav(id, el) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      $('tab-' + id).classList.add('active');
       el.classList.add('active');
+    }
+
+    async function airtableFetchAll(table, params = "") {
+      let all = [];
+      let offset = null;
+      do {
+        const url = `https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(table)}?pageSize=100${params}${offset ? `&offset=${encodeURIComponent(offset)}` : ""}`;
+        const res = await fetch(url, { headers: { Authorization: `Bearer ${API_KEY}` } });
+        const data = await res.json();
+        if (data.error) throw data.error;
+        all = all.concat(data.records || []);
+        offset = data.offset || null;
+      } while (offset);
+      return all;
     }
 
     async function api(table, method, body, id = null) {
       const tName = table.startsWith('tbl') ? table : encodeURIComponent(table);
       const url = `https://api.airtable.com/v0/${BASE_ID}/${tName}${id ? '/' + id : ''}`;
-      const opts = { method, headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' } };
-      if (body) { body.typecast = true; opts.body = JSON.stringify(body); }
+      const opts = {
+        method,
+        headers: { 'Authorization': `Bearer ${API_KEY}`, 'Content-Type': 'application/json' }
+      };
+      if (body) {
+        body.typecast = true;
+        opts.body = JSON.stringify(body);
+      }
       return fetch(url, opts);
     }
 
-    async function uploadImage(input, targetId, statusId){
+    function normalizeKind(k) {
+      const s = String(k || '').trim().toLowerCase();
+      if (s.includes('a-side')) return 'a-side';
+      if (s.includes('under')) return 'undergirls';
+      if (s.includes('unit')) return 'unit';
+      if (s.includes('solo')) return 'solo';
+      return 'b-side';
+    }
+
+    async function uploadImage(input, targetId, statusId) {
       const file = input.files[0];
-      if(!file) return;
+      if (!file) return;
       const statusEl = $(statusId);
       const targetEl = $(targetId);
-      statusEl.innerText = "⏳ Enviando imagem...";
-      try{
-        const base64 = await new Promise((resolve,reject)=>{
-          const reader = new FileReader();
-          reader.onload = ()=>resolve(reader.result);
-          reader.onerror = reject;
-          reader.readAsDataURL(file);
+      statusEl.innerText = "⏳ Enviando...";
+      try {
+        const base64 = await new Promise((r, j) => {
+          const fr = new FileReader();
+          fr.onload = () => r(fr.result);
+          fr.onerror = j;
+          fr.readAsDataURL(file);
         });
         const form = new URLSearchParams();
         form.append("key", IMGBB_KEY);
-        form.append("image", base64.split(",")[1]);
-        const res = await fetch("https://api.imgbb.com/1/upload", { method:"POST", body: form });
+        form.append("image", String(base64).split(",")[1]);
+        const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: form });
         const data = await res.json();
-        if(!data?.success) throw new Error(data?.error?.message || "Erro no upload");
+        if (!data?.success) throw new Error("Erro upload");
         targetEl.value = data.data.url;
-        statusEl.innerText = "✅ Imagem carregada!";
-        if(targetId === 'e-photo') $('e-preview').src = data.data.url;
-      }catch(e){ console.error(e); statusEl.innerText = "❌ Erro: " + e.message; }
+        statusEl.innerText = "✅ Ok!";
+        if (targetId === 'e-photo') $('e-preview').src = data.data.url;
+      } catch (e) {
+        console.error(e);
+        statusEl.innerText = "❌ Erro";
+      }
     }
 
-    // === LOADERS ===
-    async function loadMembers(){
+    async function uploadGalleryFiles(input) {
+      const files = [...(input.files || [])];
+      if (!files.length) return;
+      const statusEl = $('e-gallery-status');
+      statusEl.innerText = `⏳ Enviando ${files.length}...`;
       try {
-        const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}?sort%5B0%5D%5Bfield%5D=Time`, { headers: { Authorization: `Bearer ${API_KEY}` } });
-        const d = await r.json();
-        if(d.error) throw d.error;
-        allMembers = (d.records||[]).map(x=>({ id: x.id, name: x.fields?.Nome || '', photo: x.fields?.Foto?.[0]?.url || '', team: x.fields?.Time || '', gen: x.fields?.Geracao || '', status: x.fields?.Status || 'Ativa', part: x.fields?.Participacoes || '' }));
-        
-        // Inicializa listas
+        const urls = [];
+        for (const file of files) {
+          const base64 = await new Promise((r, j) => {
+            const fr = new FileReader();
+            fr.onload = () => r(fr.result);
+            fr.onerror = j;
+            fr.readAsDataURL(file);
+          });
+          const form = new URLSearchParams();
+          form.append("key", IMGBB_KEY);
+          form.append("image", String(base64).split(",")[1]);
+          const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: form });
+          const data = await res.json();
+          if (!data?.success) throw new Error("Erro upload galeria");
+          urls.push(data.data.url);
+          await sleep(120);
+        }
+        const area = $('e-gallery');
+        const cur = (area.value || '').trim();
+        area.value = (cur ? cur + "\n" : "") + urls.join("\n");
+        statusEl.innerText = `✅ ${urls.length} ok`;
+      } catch (e) {
+        console.error(e);
+        statusEl.innerText = "❌ Erro";
+      } finally {
+        input.value = "";
+      }
+    }
+
+    async function loadMembers() {
+      try {
+        const records = await airtableFetchAll(T_MEMBERS, `&sort%5B0%5D%5Bfield%5D=Time&sort%5B1%5D%5Bfield%5D=Nome`);
+        allMembers = (records || []).map(x => ({
+          id: x.id,
+          name: x.fields?.Nome || '',
+          photo: x.fields?.Foto?.[0]?.url || '',
+          team: x.fields?.Time || '',
+          gen: getField(x.fields, "Geracao", "Geração", "GERACAO", "GERAÇÃO"),
+          status: x.fields?.Status || 'Ativa',
+          bio: x.fields?.Perfil || '',
+          gallery: x.fields?.Galeria || [],
+          part: x.fields?.Participacoes || ''
+        }));
         renderMemberSelectionList("");
         renderManageSelect("");
-      } catch(e) { console.error(e); alert("Erro ao carregar membros."); }
-    }
-
-    // --- FUNÇÕES DE RENDERIZAÇÃO DE LISTA ---
-    function renderMemberSelectionList(filterText = "") {
-        const gl = $('selection-list');
-        if (!gl) return;
-        const q = filterText.trim().toLowerCase();
-        gl.innerHTML = '';
-        const filtered = allMembers.filter(m => (m.status !== 'Graduada' && m.status !== 'Demitida') && (!q || m.name.toLowerCase().includes(q)));
-        if(filtered.length === 0) { gl.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:#999;font-weight:900;">Nenhum membro</div>'; return; }
-        filtered.forEach(m => {
-            const div = document.createElement('div'); div.className = 'select-item';
-            div.innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}"><div>${m.name}</div>`;
-            div.onclick = () => selectMember(m);
-            gl.appendChild(div);
-        });
-    }
-
-    function renderManageSelect(filterText = "") {
-        const sl = $('manage-selector');
-        if (!sl) return;
-        const q = filterText.trim().toLowerCase();
-        sl.innerHTML = '<option value="">Selecione...</option>';
-        allMembers
-            .filter(m => !q || m.name.toLowerCase().includes(q))
-            .forEach(m => {
-                const o = document.createElement('option'); o.value = m.id; o.textContent = m.name;
-                sl.appendChild(o);
-            });
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao carregar membros.");
+      }
     }
 
     async function loadDiscos() {
       try {
-        const r = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${encodeURIComponent(T_DISCO)}?pageSize=100&sort%5B0%5D%5Bfield%5D=Data&sort%5B0%5D%5Bdirection%5D=desc`, { headers: { Authorization: `Bearer ${API_KEY}` }});
-        const d = await r.json();
-        allDiscos = (d.records || []).map(rec => ({ id: rec.id, fields: rec.fields || {} }));
+        const records = await airtableFetchAll(T_DISCO, `&sort%5B0%5D%5Bfield%5D=Data&sort%5B0%5D%5Bdirection%5D=desc`);
+        allDiscos = (records || []).map(rec => ({ id: rec.id, fields: rec.fields || {} }));
         const sel = $('disco-selector');
-        if (sel) { sel.innerHTML = '<option value="">Selecione...</option>'; allDiscos.forEach(rec => { const title = rec.fields["Titulo"] || "(Sem título)"; const opt = document.createElement('option'); opt.value = rec.id; opt.textContent = title; sel.appendChild(opt); }); }
-      } catch (err) { console.error(err); }
-    }
-
-    async function uploadGalleryFiles(input) {
-      const files = Array.from(input.files || []);
-      const statusEl = $('e-gallery-status');
-      const box = $('e-gallery');
-      if (!files.length) return;
-      if (statusEl) statusEl.innerText = `⏳ Enviando ${files.length}...`;
-      try {
-        const urls = [];
-        for (const file of files) {
-          const base64 = await new Promise((resolve, reject) => { const r = new FileReader(); r.onload = () => resolve(r.result); r.onerror = reject; r.readAsDataURL(file); });
-          const form = new URLSearchParams(); form.append("key", IMGBB_KEY); form.append("image", String(base64).split(",")[1]);
-          const res = await fetch("https://api.imgbb.com/1/upload", { method: "POST", body: form });
-          const data = await res.json();
-          if (!data?.success) throw new Error("Erro upload");
-          urls.push(data.data.url);
-          await sleep(150);
-        }
-        const current = (box.value || "").trim();
-        box.value = current ? (current + "\n" + urls.join("\n")) : urls.join("\n");
-        if (statusEl) statusEl.innerText = "✅ Galeria atualizada!";
-      } catch (e) { if (statusEl) statusEl.innerText = "Erro"; }
-    }
-
-    // === PARSER ===
-    function parseHTMLToTracks(htmlString) {
-        if (!htmlString) return [];
-        const buffer = [];
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(htmlString, 'text/html');
-        const listItems = doc.querySelectorAll('.tracklist li');
-        let formationGroups = doc.querySelectorAll('.formation-group');
-        if(formationGroups.length === 0) formationGroups = doc.querySelectorAll('.rows-wrap');
-
-        listItems.forEach((li, index) => {
-            const link = li.querySelector('a');
-            const name = link ? link.innerText : (li.innerText || 'Música').split(' ')[0];
-            const label = li.querySelector('.label');
-            let kind = 'B-side';
-            let unitName = "";
-            if (label) {
-                const classKind = label.classList[1] || '';
-                if(classKind.includes('a-side')) kind = 'A-side';
-                else if(classKind.includes('under')) kind = 'Undergirls';
-                else if(classKind.includes('unit')) kind = 'Unit';
-                else if(classKind.includes('solo')) kind = 'Solo';
-                if(kind === 'Unit' && label.innerText !== 'Unit') unitName = label.innerText;
-            }
-            let members = [];
-            let group = formationGroups[index];
-            if (group) {
-                const slots = group.querySelectorAll('.slot');
-                if (slots.length > 0) {
-                    slots.forEach(s => {
-                        const mId = s.dataset.id; const mName = s.dataset.name;
-                        const isCenter = s.classList.contains('is-center') || s.dataset.isCenter === 'true';
-                        if(mId) members.push({ id: mId, name: mName, isCenter });
-                    });
-                } else {
-                    const cards = group.querySelectorAll('.member-card-static');
-                    cards.forEach(c => {
-                        const h3 = c.querySelector('h3'); const mName = h3 ? h3.innerText : '';
-                        const isCenter = c.classList.contains('is-center');
-                        const found = allMembers.find(m => m.name === mName);
-                        if(found) members.push({ id: found.id, name: found.name, isCenter });
-                    });
-                }
-            }
-            buffer.push({ name, kind, unitName, members, center: '', html: null }); 
+        sel.innerHTML = '<option value="">Selecione...</option>';
+        allDiscos.forEach(rec => {
+          const o = document.createElement('option');
+          o.value = rec.id;
+          o.text = rec.fields.Titulo || '(Sem título)';
+          sel.appendChild(o);
         });
-        return buffer;
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    // === FORMS ===
-    async function fillEditForm() {
-      const id = val('manage-selector');
-      const f = $('edit-form');
-      if (!id) { if (f) f.style.display = 'none'; return; }
-      const res = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${id}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } });
-      const data = await res.json();
-      const fields = data.fields || {};
-      $('e-name').value = fields.Nome || '';
-      $('e-status-select').value = fields.Status || 'Ativa';
-      $('e-team').value = fields.Time || 'Team C';
-      $('e-gen').value = (fields.Geracao || '').replace('ª Geração','').trim();
-      const photoUrl = (fields.Foto && fields.Foto[0] && fields.Foto[0].url) ? fields.Foto[0].url : '';
-      $('e-photo').value = photoUrl;
-      if ($('e-preview')) $('e-preview').src = photoUrl || 'https://placehold.co/100';
-      if ($('e-bio')) $('e-bio').value = fields.Perfil || '';
-      const galUrls = Array.isArray(fields.Galeria) ? fields.Galeria.map(x => x.url).filter(Boolean) : [];
-      if ($('e-gallery')) $('e-gallery').value = galUrls.join('\n');
-      $('e-part').value = fields.Participacoes || '';
-      if ($('e-upload-status')) $('e-upload-status').innerText = "";
-      if ($('e-gallery-status')) $('e-gallery-status').innerText = "";
-      if (f) f.style.display = 'block';
+    async function saveNews(e) {
+      e.preventDefault();
+      showLoading(true, "Publicando...");
+      try {
+        const fields = { "Titulo": val('n-title'), "Categoria": val('n-cat'), "Data": val('n-date'), "Texto": val('n-text') };
+        const res = await api(T_NEWS, 'POST', { fields });
+        if (!res.ok) throw await res.json();
+        alert("Notícia publicada!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        alert("Erro ao publicar.");
+      }
     }
 
-    function fillDiscoEditForm() {
-      const id = $('disco-selector')?.value;
-      const formBox = $('disco-edit-form');
-      if (!id) { if (formBox) formBox.style.display = 'none'; return; }
-      const rec = allDiscos.find(r => r.id === id);
-      if (!rec) return;
-      const f = rec.fields;
-      $('ed-title').value = f["Titulo"] || "";
-      $('ed-type').value = f["Tipo"] || "Single";
-      $('ed-date').value = (f["Data"] || "").slice(0,10);
-      $('ed-center').value = f["Center"] || "";
-      $('ed-cover').value = f["Capa"] || "";
-      $('ed-tracklist').value = f["Tracklist"] || "";
-      const tipos = f["Tipo da faixa"];
-      $('ed-tipos').value = Array.isArray(tipos) ? tipos.join(", ") : (tipos || "");
-      
-      const oldHTML = f["Tracklist"] || "";
-      tracksBuffer = parseHTMLToTracks(oldHTML);
-      updateTracks(true); // Atualiza a lista visual na tela de edição
-
-      if (formBox) formBox.style.display = 'block';
+    function renderManageSelect(filter = "") {
+      const sl = $('manage-selector');
+      if (!sl) return;
+      const q = (filter || "").toLowerCase();
+      sl.innerHTML = '<option value="">Selecione...</option>';
+      allMembers.filter(m => !q || m.name.toLowerCase().includes(q)).forEach(m => {
+        const o = document.createElement('option');
+        o.value = m.id;
+        o.textContent = m.name;
+        sl.appendChild(o);
+      });
     }
 
-    // === ACTIONS ===
+    function getSelectedIds() {
+      return new Set([...document.querySelectorAll('.slot')].map(s => s.dataset.id).filter(Boolean));
+    }
+
+    function renderMemberSelectionList(filterText) {
+      const gl = $('selection-list');
+      if (!gl) return;
+      const q = (filterText ?? $('member-search')?.value ?? '').toLowerCase().trim();
+      const team = ($('member-filter-team')?.value || '').trim();
+      const genFilter = ($('member-filter-gen')?.value || '').trim();
+      const selectedIds = getSelectedIds();
+      gl.innerHTML = '';
+
+      const filtered = allMembers.filter(m => {
+        if (m.status === 'Graduada' || m.status === 'Demitida' || m.status === 'Expulsa') return false;
+        if (q && !m.name.toLowerCase().includes(q)) return false;
+        if (team && String(m.team).trim() !== team) return false;
+        if (genFilter) {
+          const g = String(m.gen ?? '').trim();
+          const onlyNum = g.match(/\d+/)?.[0] || '';
+          if (onlyNum !== genFilter) return false;
+        }
+        return true;
+      });
+
+      filtered.forEach(m => {
+        const d = document.createElement('div');
+        d.className = 'select-item' + (selectedIds.has(m.id) ? ' is-picked' : '');
+        const genTxt = formatGen(m.gen);
+        d.innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}"><div>${m.name}${genTxt ? `<br><span style="font-size:.68rem; color:#777; font-weight:900;">${genTxt}</span>` : ''}</div>`;
+        d.onclick = () => {
+          d.style.transform = 'scale(.96)';
+          setTimeout(() => d.style.transform = '', 120);
+          selectMember(m);
+        };
+        gl.appendChild(d);
+      });
+    }
+
     async function saveMember(e) {
       e.preventDefault();
-      const genStr = val('m-gen') + "ª Geração";
-      const fields = { "Nome": val('m-name'), "Time": val('m-team'), "Geracao": genStr, "Status": val('m-status-select'), "Foto": val('m-photo') ? [{ url: val('m-photo') }] : [], "Perfil": val('m-bio') || "" };
-      const ok = await api(T_MEMBERS, 'POST', { fields });
-      if (ok.ok) { alert('Membro cadastrado!'); location.reload(); } else { alert("Erro."); }
+      showLoading(true, "Cadastrando...");
+      try {
+        const fields = {
+          "Nome": val('m-name'),
+          "Time": val('m-team'),
+          "Geracao": genToStored(val('m-gen')),
+          "Status": val('m-status-select'),
+          "Perfil": val('m-bio'),
+          "Foto": [{ url: val('m-photo') }]
+        };
+        const res = await api(T_MEMBERS, 'POST', { fields });
+        if (!res.ok) throw await res.json();
+        alert("Membro cadastrado!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        alert("Erro ao cadastrar.");
+      }
+    }
+
+    async function fillEditForm() {
+      const id = val('manage-selector');
+      const box = $('edit-form');
+      if (!id) { box.style.display = 'none'; return; }
+      try {
+        const res = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${id}`, { headers: { Authorization: `Bearer ${API_KEY}` } });
+        const d = await res.json();
+        if (d.error) throw d.error;
+        const fd = d.fields || {};
+        $('e-name').value = fd.Nome || '';
+        $('e-team').value = fd.Time || 'Team C';
+        $('e-gen').value = genToNumber(getField(fd, "Geracao", "Geração", "GERACAO", "GERAÇÃO"));
+        $('e-status-select').value = fd.Status || 'Ativa';
+        const photoUrl = fd.Foto?.[0]?.url || '';
+        $('e-photo').value = photoUrl;
+        $('e-preview').src = photoUrl || 'https://placehold.co/100';
+        $('e-bio').value = fd.Perfil || '';
+        $('e-part').value = fd.Participacoes || '';
+        const gal = (fd.Galeria || []).map(x => x.url).filter(Boolean).join("\n");
+        $('e-gallery').value = gal;
+        const normalized = normalizeParts(parsePartsSafe($('e-part').value));
+        $('e-part').value = JSON.stringify(normalized, null, 0);
+        box.style.display = 'block';
+      } catch (e) {
+        console.error(e);
+        alert("Erro ao carregar membro.");
+      }
     }
 
     async function updateMember(e) {
       e.preventDefault();
-      const id = val('manage-selector'); if (!id) return;
-      const galleryLines = (val('e-gallery') || '').split('\n').map(s => s.trim()).filter(Boolean);
-      const genStr = val('e-gen') + "ª Geração";
-      const fields = { "Nome": val('e-name'), "Time": val('e-team'), "Geracao": genStr, "Status": val('e-status-select'), "Foto": val('e-photo') ? [{ "url": val('e-photo') }] : [], "Perfil": val('e-bio') || '', "Galeria": galleryLines.map(url => ({ url })), "Participacoes": val('e-part') || '' };
-      const ok = await api(T_MEMBERS, 'PATCH', { fields }, id);
-      if (ok.ok) { alert('Atualizado!'); location.reload(); } else { alert('Erro.'); }
+      const id = val('manage-selector');
+      if (!id) return;
+      showLoading(true, "Salvando membro...");
+      try {
+        const galleryLines = (val('e-gallery') || '').split("\n").map(s => s.trim()).filter(Boolean);
+        const partNorm = normalizeParts(parsePartsSafe(val('e-part')));
+        const fields = {
+          "Nome": val('e-name'),
+          "Time": val('e-team'),
+          "Geracao": genToStored(val('e-gen')),
+          "Status": val('e-status-select'),
+          "Perfil": val('e-bio'),
+          "Participacoes": JSON.stringify(partNorm, null, 0),
+          "Foto": [{ url: val('e-photo') }],
+          "Galeria": galleryLines.map(url => ({ url }))
+        };
+        const res = await api(T_MEMBERS, 'PATCH', { fields }, id);
+        if (!res.ok) throw await res.json();
+        alert("Alterações salvas!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        alert("Erro ao salvar.");
+      }
     }
 
-    async function saveNews(e){
-      e.preventDefault();
-      const r = await api(T_NEWS, 'POST', { fields:{ "Titulo": val('n-title'), "Categoria": val('n-cat'), "Data": val('n-date'), "Texto": val('n-text') }});
-      if(r.ok){ alert('Notícia Salva!'); location.reload(); } else { alert('Erro.'); }
-    }
-
-    // === SAVE / UPDATE DISCO ===
-    function buildHTML() {
-        let html = `<div class="modal-nav"><button class="modal-nav-btn active" data-section="tracklist">Tracklist</button><button class="modal-nav-btn" data-section="formacao">Formação</button></div><div class="details-content"><div class="modal-section active" data-section="tracklist"><ol class="tracklist">`;
-        let forms = `<div class="modal-section" data-section="formacao">`;
-
-        tracksBuffer.forEach((t, index) => {
-          const kindLabel = t.kind || 'B-side';
-          const unitTxt = t.unitName ? ` • ${t.unitName}` : '';
-          html += `<li><a>${t.name}</a> <span class="label ${t.kind.toLowerCase()}">${kindLabel}${unitTxt}</span></li>`;
-          
-          forms += `<div class="formation-group"><div class="formation-title">${t.kind === 'Unit' ? '<i class="fas fa-users"></i>' : ''} ${t.name}</div><div class="member-grid">`;
-          t.members.forEach(mem => {
-              const fullMem = allMembers.find(am => am.id === mem.id);
-              if(!fullMem) return;
-              const centerClass = mem.isCenter ? 'is-center' : '';
-              const genTxt = (fullMem.gen || '').replace('ª Geração', 'ª Gen'); 
-              forms += `<a class="member-card-static ${centerClass}"><div class="member-photo"><img src="${fullMem.photo}" loading="lazy"></div><div class="member-info"><h3>${fullMem.name}</h3><p>${genTxt}</p></div></a>`;
+    function parseHTMLToTracks(htmlString) {
+      if (!htmlString) return [];
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = htmlString;
+      const hiddenDataEl = tempDiv.querySelector('#ctl48-formation-data');
+      if (hiddenDataEl) {
+        try {
+          const data = JSON.parse(hiddenDataEl.innerText);
+          return data.map(t => ({ ...t, html: null }));
+        } catch (e) { }
+      }
+      const buffer = [];
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlString, 'text/html');
+      const listItems = doc.querySelectorAll('.tracklist li');
+      let groups = doc.querySelectorAll('.formation-group');
+      if (groups.length === 0) groups = doc.querySelectorAll('.rows-wrap');
+      listItems.forEach((li, index) => {
+        const link = li.querySelector('a');
+        const name = link ? link.innerText : (li.innerText || 'Música').split(' ')[0];
+        let kind = 'B-side', unitName = "";
+        const label = li.querySelector('.label');
+        if (label) {
+          const cls = label.className.toLowerCase();
+          if (cls.includes('a-side')) kind = 'A-side';
+          else if (cls.includes('under')) kind = 'Undergirls';
+          else if (cls.includes('unit')) { kind = 'Unit'; unitName = (label.innerText && label.innerText !== 'Unit') ? label.innerText : ''; }
+          else if (cls.includes('solo')) kind = 'Solo';
+          else kind = 'B-side';
+        }
+        let members = [];
+        const group = groups[index];
+        if (group) {
+          const cards = group.querySelectorAll('.member-card-static');
+          cards.forEach(c => {
+            const h3 = c.querySelector('h3');
+            const mName = h3 ? h3.innerText : '';
+            const isCenter = c.classList.contains('is-center');
+            const found = allMembers.find(m => m.name === mName);
+            if (found) members.push({ id: found.id, name: found.name, gen: found.gen || '', isCenter });
+            else members.push({ id: null, name: mName, gen: '', isCenter });
           });
-          forms += `</div></div>`; 
-          if(index < tracksBuffer.length - 1) forms += `<hr class="formation-separator"/>`;
+        }
+        buffer.push({ name, kind, unitName, members, html: null });
+      });
+      return buffer;
+    }
+
+    function buildHTML() {
+      let html = `<div class="modal-nav"><button class="modal-nav-btn active" data-section="tracklist">Tracklist</button><button class="modal-nav-btn" data-section="formacao">Formação</button></div><div class="details-content"><div class="modal-section active" data-section="tracklist"><ol class="tracklist">`;
+      let forms = `<div class="modal-section" data-section="formacao">`;
+      tracksBuffer.forEach((t, index) => {
+        const kindText = t.kind || 'B-side';
+        const kindClass = normalizeKind(t.kind);
+        const unitTxt = (String(t.unitName || '').trim()) ? ` • ${t.unitName}` : '';
+        html += `<li><a>${t.name}</a> <span class="label ${kindClass}">${kindText}${unitTxt}</span></li>`;
+        forms += `<div class="formation-group"><div class="formation-title">${(String(t.kind) === 'Unit') ? '<i class="fas fa-users"></i>' : ''} ${t.name}</div><div class="member-grid">`;
+        (t.members || []).forEach(mem => {
+          let full = allMembers.find(am => am.id === mem.id);
+          if (!full && mem.name) full = allMembers.find(am => am.name === mem.name);
+          const centerClass = mem.isCenter ? 'is-center' : '';
+          const photo = full?.photo || 'https://placehold.co/300?text=?';
+          const name = full?.name || mem.name || '???';
+          const genTxt = formatGen(full?.gen || mem.gen || '');
+          if (full) mem.id = full.id;
+          forms += `<a class="member-card-static ${centerClass}" data-id="${mem.id || ''}"><div class="member-photo"><img src="${photo}" loading="lazy"></div><div class="member-info"><h3>${name}</h3><p>${genTxt || ''}</p></div></a>`;
         });
-        forms += `</div></div>`; 
-        return html + forms;
+        forms += `</div></div>`;
+        if (index < tracksBuffer.length - 1) forms += `<hr class="formation-separator"/>`;
+      });
+      forms += `</div></div>`;
+      const hiddenData = `<div id="ctl48-formation-data" style="display:none;">${JSON.stringify(tracksBuffer)}</div>`;
+      return html + `</ol></div>` + forms + hiddenData + `</div>`;
+    }
+
+    async function updateMembersHistoryByDiscoId(discoId, singleTitle, tracks) {
+      const memberUpdates = {};
+      tracks.forEach(track => {
+        const baseLabel = normalizeKind(track.kind);
+        (track.members || []).forEach(mem => {
+          if (!mem?.id) return;
+          if (!memberUpdates[mem.id]) memberUpdates[mem.id] = [];
+          const labels = [baseLabel];
+          if (baseLabel === 'unit') labels.push('unit');
+          if (mem.isCenter) labels.push('center');
+          memberUpdates[mem.id].push({
+            title: track.name,
+            labels,
+            unitName: track.unitName || ''
+          });
+        });
+      });
+      for (const [memId, newTracks] of Object.entries(memberUpdates)) {
+        const getRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${memId}`, { headers: { Authorization: `Bearer ${API_KEY}` } });
+        const getData = await getRes.json();
+        let currentHist = [];
+        try { currentHist = JSON.parse(getData.fields?.Participacoes || '[]'); } catch (e) { }
+        const cleanHist = currentHist.filter(h => h.discoId !== discoId);
+        cleanHist.push({ discoId, single: singleTitle, tracks: newTracks });
+        await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(cleanHist) } }, memId);
+        await sleep(90);
+      }
+    }
+
+    async function removeDiscoFromAllMembers(discoId) {
+      const members = await airtableFetchAll(T_MEMBERS, `&sort%5B0%5D%5Bfield%5D=Nome`);
+      for (const m of (members || [])) {
+        let h = [];
+        try { h = JSON.parse(m.fields?.Participacoes || '[]'); } catch (e) { h = []; }
+        const newH = h.filter(x => x.discoId !== discoId);
+        if (newH.length !== h.length) {
+          await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(newH) } }, m.id);
+          await sleep(90);
+        }
+      }
     }
 
     async function saveDisco(e) {
       e.preventDefault();
-      if (!tracksBuffer.length) { alert('Adicione músicas!'); return; }
+      if (!tracksBuffer.length) { alert("Adicione músicas!"); return; }
       showLoading(true, "Salvando...");
       try {
         const html = buildHTML();
-        const tipos = [...new Set(tracksBuffer.map(t => {
-             const k = String(t.kind).toLowerCase();
-             if (k.includes('a-side')) return 'A-side';
-             if (k.includes('b-side')) return 'B-side';
-             if (k.includes('under')) return 'Undergirls';
-             if (k.includes('unit')) return 'Unit';
-             if (k.includes('solo')) return 'Solo';
-             return 'B-side';
-        }))];
+        const tipos = [...new Set(tracksBuffer.map(t => normalizeKind(t.kind)))];
         const firstTrack = tracksBuffer[0];
-        const centerStr = firstTrack ? firstTrack.members.filter(m=>m.isCenter).map(m=>m.name).join(' & ') : '';
-
-        const fields = { "Titulo": val('d-title'), "Tipo": val('d-type'), "Tipo da faixa": tipos, "Center": centerStr || val('d-center'), "Data": val('d-date'), "Capa": val('d-cover'), "Tracklist": html };
+        const centerStr = firstTrack ? (firstTrack.members || []).filter(m => m.isCenter).map(m => m.name).join(' & ') : '';
+        const fields = {
+          "Titulo": val('d-title'),
+          "Tipo": val('d-type'),
+          "Tipo da faixa": tipos,
+          "Center": centerStr || val('d-center'),
+          "Data": val('d-date'),
+          "Capa": val('d-cover'),
+          "Tracklist": html
+        };
         const dRes = await api(T_DISCO, 'POST', { fields });
-        if (!dRes.ok) throw await dRes.json();
-        
-        await updateMembersHistory(val('d-title'), tracksBuffer);
-        setTimeout(() => { showLoading(false); alert("Sucesso!"); location.reload(); }, 700);
-      } catch (err) { showLoading(false); alert('Erro: ' + err); }
+        const created = await dRes.json();
+        if (!dRes.ok || created?.error) throw created?.error || created;
+        const discoId = created.id;
+        await updateMembersHistoryByDiscoId(discoId, val('d-title'), tracksBuffer);
+        alert("Sucesso!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        alert("Erro ao salvar.");
+      }
+    }
+
+    function fillDiscoEditForm() {
+      const id = $('disco-selector')?.value;
+      const box = $('disco-edit-form');
+      if (!id) { box.style.display = 'none'; currentEditingDiscoId = null; return; }
+      currentEditingDiscoId = id;
+      const rec = allDiscos.find(r => r.id === id);
+      if (!rec) return;
+      const f = rec.fields;
+      $('ed-title').value = f.Titulo || '';
+      $('ed-type').value = f.Tipo || 'Single';
+      $('ed-date').value = (f.Data || '').slice(0, 10);
+      $('ed-center').value = f.Center || '';
+      $('ed-cover').value = f.Capa || '';
+      const oldHTML = f.Tracklist || '';
+      tracksBuffer = parseHTMLToTracks(oldHTML);
+      updateTracks(true);
+      box.style.display = 'block';
     }
 
     async function updateDisco(e) {
       e.preventDefault();
-      const id = $('disco-selector')?.value;
+      const id = currentEditingDiscoId;
       if (!id) return;
-      showLoading(true, "Atualizando (Regerando HTML)...");
-      
-      const html = buildHTML(); 
-      const firstTrack = tracksBuffer[0];
-      const centerStr = firstTrack ? firstTrack.members.filter(m=>m.isCenter).map(m=>m.name).join(' & ') : '';
-
-      const fields = { "Tipo": $('ed-type').value, "Data": $('ed-date').value, "Center": centerStr, "Capa": $('ed-cover').value, "Tracklist": html };
-      
-      const res = await api(T_DISCO, 'PATCH', { fields }, id);
-      if (res.ok) { alert("Atualizado!"); location.reload(); } else { alert("Erro."); showLoading(false); }
-    }
-
-    async function updateMembersHistory(singleTitle, tracks) {
-        const memberUpdates = {};
-        tracks.forEach(track => {
-          if(!track.members) return;
-          const baseLabel = track.kind || 'b-side';
-          track.members.forEach(mem => {
-            if (!mem?.id) return;
-            if (!memberUpdates[mem.id]) memberUpdates[mem.id] = [];
-            const labels = [baseLabel];
-            if (track.kind === 'unit') labels.push('unit');
-            if (mem.isCenter) labels.push('center');
-            memberUpdates[mem.id].push({ title: track.name, labels, unitName: track.unitName || '' });
-          });
-        });
-        
-        for (const [memId, newTracks] of Object.entries(memberUpdates)) {
-             const getRes = await fetch(`https://api.airtable.com/v0/${BASE_ID}/${T_MEMBERS}/${memId}`, { headers: { 'Authorization': `Bearer ${API_KEY}` } });
-             const getData = await getRes.json();
-             let currentHist = [];
-             try { currentHist = JSON.parse(getData.fields.Participacoes || '[]'); } catch (e) {}
-             currentHist.push({ single: singleTitle, tracks: newTracks });
-             await api(T_MEMBERS, 'PATCH', { fields: { "Participacoes": JSON.stringify(currentHist) } }, memId);
-             await sleep(200);
-        }
+      showLoading(true, "Atualizando...");
+      try {
+        const html = buildHTML();
+        const tipos = [...new Set(tracksBuffer.map(t => normalizeKind(t.kind)))];
+        const firstTrack = tracksBuffer[0];
+        const centerStr = firstTrack ? (firstTrack.members || []).filter(m => m.isCenter).map(m => m.name).join(' & ') : '';
+        const fields = {
+          "Tipo": val('ed-type'),
+          "Data": val('ed-date'),
+          "Center": centerStr,
+          "Capa": val('ed-cover'),
+          "Tracklist": html,
+          "Tipo da faixa": tipos
+        };
+        const res = await api(T_DISCO, 'PATCH', { fields }, id);
+        const out = await res.json();
+        if (!res.ok || out?.error) throw out?.error || out;
+        await updateMembersHistoryByDiscoId(id, val('ed-title'), tracksBuffer);
+        alert("Atualizado!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        alert("Erro ao atualizar.");
+      }
     }
 
     async function deleteDisco() {
-      const id = $('disco-selector')?.value;
-      const title = $('ed-title')?.value;
-      if (!id || !title) return;
-      if (!confirm(`Tem certeza?`)) return;
-      showLoading(true, "Deletando...");
+      const id = currentEditingDiscoId || $('disco-selector')?.value;
+      if (!id) return;
+      if (!confirm("Apagar este disco e limpar participações de TODOS os membros?")) return;
+      showLoading(true, "Deletando e limpando...");
       try {
         await api(T_DISCO, 'DELETE', null, id);
-        alert(`Deletado!`); location.reload();
-      } catch (e) { showLoading(false); alert("Erro"); }
+        await removeDiscoFromAllMembers(id);
+        alert("Deletado e histórico limpo!");
+        location.reload();
+      } catch (err) {
+        console.error(err);
+        showLoading(false);
+        alert("Erro ao deletar.");
+      }
     }
 
-    // === BUILDER & UI ===
-    function openBuilder(){ $('builder-modal').style.display='flex'; $('builder-modal').classList.add('active'); $('step-1').style.display='block'; $('step-2').style.display='none'; if(!$('row-inputs').children.length) renderRowInputs(); toggleKindRules(); syncRowsUI(); }
-    function closeBuilder(goToMenu=true){ $('builder-modal').classList.remove('active'); $('builder-modal').style.display='none'; if(goToMenu){ $('step-1').style.display='block'; $('step-2').style.display='none'; } }
-    function backToFormationMenu(){ $('step-2').style.display='none'; $('step-1').style.display='block'; }
-    function syncRowsUI(){ const total = parseInt(val('b-total'))||0; $('rows-total').innerText = total; updateRowsSum(); }
-    function renderRowInputs(){ 
-        const wrap = $('row-inputs'); const count = parseInt(val('b-rowcount'))||3; 
-        const old = [...wrap.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
-        wrap.innerHTML='';
-        for(let i=0;i<count;i++){ wrap.innerHTML += `<div class="rowline"><div class="row-tag">${i===0?'Frente':(i===count-1?'Fundo':`Meio ${i}`)}</div><input type="number" min="0" class="row-count-input" value="${old[i]||0}" oninput="updateRowsSum()"></div>`; }
-        updateRowsSum();
-    }
-    function updateRowsSum(){ const total = parseInt(val('b-total'))||0; const sum = [...document.querySelectorAll('.row-count-input')].reduce((a,b)=>a+(parseInt(b.value)||0),0); $('rows-sum').innerText = sum; $('rows-sum').style.color = (sum===total) ? '#00b894' : '#e91e63'; }
-    function toggleKindRules(){ 
-        const kind = val('b-kind'); $('unit-fields').style.display = (kind === 'Unit') ? 'block' : 'none'; 
-        if(kind === 'Solo'){ $('b-total').value = 1; $('b-centers').value = 1; syncRowsUI(); if(!$('row-inputs').children.length) renderRowInputs(); const inputs=[...document.querySelectorAll('.row-count-input')]; inputs.forEach(i=>i.value=0); if(inputs[0]) inputs[0].value=1; updateRowsSum(); }
-    }
-    function startStage(){
-        const total = parseInt(val('b-total'))||0;
-        const inputs = [...document.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
-        if(inputs.reduce((a,b)=>a+b,0) !== total){ alert(`Soma incorreta.`); return; }
-        const centerCount = parseInt(val('b-centers')) || 0;
-        const frontRowCount = inputs[0] || 0;
-        let centerIndices = [];
-        if (centerCount > 0 && frontRowCount > 0) {
-            const start = Math.floor((frontRowCount - centerCount) / 2);
-            for(let k=0; k<centerCount; k++) centerIndices.push(start + k);
-        }
-        const slotsWrap = $('slots'); slotsWrap.innerHTML='';
-        let idx=1;
-        const rowsWrap = document.createElement('div'); rowsWrap.className='rows-wrap';
-        for(let r=inputs.length-1; r>=0; r--){
-            const rowDiv = document.createElement('div'); rowDiv.className='slots-row';
-            const isFrontRow = (r === 0);
-            for(let j=0; j<inputs[r]; j++){
-                const d=document.createElement('div'); d.className='slot'; d.dataset.index=idx;
-                if (isFrontRow && centerIndices.includes(j)) d.classList.add('is-center');
-                d.innerHTML = `<div class="slot-badge">${idx++}</div><div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div><div class="slot-name">-</div>`;
-                d.onclick=()=>openMemberModal(d);
-                rowDiv.appendChild(d);
-            }
-            rowsWrap.appendChild(rowDiv);
-        }
-        slotsWrap.appendChild(rowsWrap);
-        $('step-1').style.display='none'; $('step-2').style.display='block';
-    }
-    
-    function openMemberModal(slotEl){ 
-        activeSlot = slotEl; 
-        $('member-select-modal').style.display='flex'; 
-        
-        // Reset Search
-        const search = $('member-search');
-        if(search) { search.value = ""; search.focus(); renderMemberSelectionList(""); }
+    // === MOVER FAIXAS (REORDER) ===
+    function moveTrack(index, direction, isEdit) {
+        const newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= tracksBuffer.length) return;
+        const temp = tracksBuffer[index];
+        tracksBuffer[index] = tracksBuffer[newIndex];
+        tracksBuffer[newIndex] = temp;
+        updateTracks(isEdit);
     }
 
-    function closeMemberModal(){ $('member-select-modal').style.display='none'; activeSlot=null; }
-    
-    function selectMember(m){
-        if(!activeSlot) return;
-        activeSlot.querySelector('.slot-circle').innerHTML = `<img src="${m.photo || 'https://placehold.co/100'}">`;
-        activeSlot.querySelector('.slot-name').innerText = m.name;
-        activeSlot.dataset.id=m.id; activeSlot.dataset.name=m.name; 
-        closeMemberModal();
+    function openBuilder(isEdit) {
+      builderIsEditMode = !!isEdit;
+      $('builder-modal').style.display = 'flex';
+      $('builder-modal').classList.add('active');
+      $('step-1').style.display = 'block';
+      $('step-2').style.display = 'none';
+      if (!$('row-inputs').children.length) renderRowInputs();
+      $('b-song').value = '';
+      $('b-unit-name').value = '';
+      toggleKindRules();
+      syncRowsUI();
     }
-    function clearSlot(){ if(activeSlot){ activeSlot.querySelector('.slot-circle').innerHTML = '<i class="fas fa-plus" style="color:#ddd"></i>'; activeSlot.querySelector('.slot-name').innerText='-'; delete activeSlot.dataset.id; } closeMemberModal(); }
-    
-    function finishTrack(){
-        const name = val('b-song').trim(); if(!name){ alert('Nome?'); return; }
-        const kind = val('b-kind');
-        const unitName = val('b-unit-name');
-        const slots = [...document.querySelectorAll('.slot')].filter(s=>s.dataset.id);
-        if(!slots.length){ alert('Selecione membros.'); return; }
-        const centerCount = parseInt(val('b-centers'))||1;
-        const sortedSlots = slots.sort((a,b)=>parseInt(a.dataset.index)-parseInt(b.dataset.index));
-        const centers = sortedSlots.slice(0, centerCount);
-        const members = sortedSlots.map(s => ({ id: s.dataset.id, name: s.dataset.name, isCenter: s.classList.contains('is-center') }));
-        
-        tracksBuffer.push({ name, kind, unitName, members, html: null }); 
-        updateTracks(true); closeBuilder(true);
+
+    function closeBuilder(reset = true) {
+      $('builder-modal').classList.remove('active');
+      $('builder-modal').style.display = 'none';
+      if (reset) {
+        $('step-1').style.display = 'block';
+        $('step-2').style.display = 'none';
+      }
     }
-    
-    function updateTracks(isEdit = false){
-        const listId = isEdit ? 'ed-tracks-list' : 'tracks-list';
-        const c = $(listId); 
-        if(!c) return;
-        c.innerHTML = tracksBuffer.length ? '' : '<div style="text-align:center;color:#999;font-size:0.85rem;">Vazio</div>';
-        tracksBuffer.forEach((t,i)=>{
-            c.innerHTML += `<div class="track-item"><div><b>${t.name}</b> <span class="badge">${t.kind}</span></div><button onclick="tracksBuffer.splice(${i},1);updateTracks(${isEdit})" style="color:red;border:none;background:none;font-weight:900;">X</button></div>`;
-        });
+
+    function backToFormationMenu() {
+      $('step-2').style.display = 'none';
+      $('step-1').style.display = 'block';
     }
-    
-    async function captureFormation(){
-        const area = $('slots'); if(!area) return;
-        const canvas = await html2canvas(area, { backgroundColor:"#ffffff", scale:2 });
-        const link = document.createElement('a'); link.download = `formacao-${Date.now()}.png`; link.href = canvas.toDataURL('image/png'); link.click();
+
+    function syncRowsUI() {
+      const total = parseInt(val('b-total')) || 0;
+      $('rows-total').innerText = total;
+      updateRowsSum();
     }
+
+    function renderRowInputs() {
+      const wrap = $('row-inputs');
+      const count = parseInt(val('b-rowcount')) || 3;
+      const old = [...wrap.querySelectorAll('.row-count-input')].map(i => parseInt(i.value) || 0);
+      wrap.innerHTML = '';
+      for (let i = 0; i < count; i++) {
+        wrap.innerHTML += `
+          <div class="rowline">
+            <div class="row-tag">${i === 0 ? 'Frente' : (i === count - 1 ? 'Fundo' : `Meio ${i}`)}</div>
+            <input type="number" min="0" class="row-count-input" value="${old[i] || 0}" oninput="updateRowsSum()">
+          </div>`;
+      }
+      updateRowsSum();
+    }
+
+    function updateRowsSum() {
+      const total = parseInt(val('b-total')) || 0;
+      const sum = [...document.querySelectorAll('.row-count-input')].reduce((a, b) => a + (parseInt(b.value) || 0), 0);
+      $('rows-sum').innerText = sum;
+      $('rows-sum').style.color = (sum === total) ? '#00b894' : '#e91e63';
+    }
+
+    function toggleKindRules() {
+      const k = val('b-kind');
+      $('unit-fields').style.display = (k === 'Unit') ? 'block' : 'none';
+      if (k === 'Solo') {
+        $('b-total').value = 1;
+        $('b-centers').value = 1;
+        $('b-rowcount').value = 1;
+        renderRowInputs();
+        const inp = document.querySelector('.row-count-input');
+        if (inp) inp.value = 1;
+        syncRowsUI();
+      }
+    }
+
+    function startStage() {
+      const total = parseInt(val('b-total')) || 0;
+      const inputs = [...document.querySelectorAll('.row-count-input')].map(i => parseInt(i.value) || 0);
+      if (inputs.reduce((a, b) => a + b, 0) !== total) {
+        alert("Soma incorreta.");
+        return;
+      }
+      const centerCount = parseInt(val('b-centers')) || 0;
+      const frontRowCount = inputs[0] || 0;
+      let cIdx = [];
+      if (centerCount > 0 && frontRowCount > 0) {
+        const start = Math.floor((frontRowCount - centerCount) / 2);
+        for (let k = 0; k < centerCount; k++) cIdx.push(start + k);
+      }
+      const slotsWrap = $('slots');
+      slotsWrap.innerHTML = '';
+      const rowsWrap = document.createElement('div');
+      rowsWrap.className = 'rows-wrap';
+      function badgeFor(rowIndexFrontBased, j) {
+        const rowCount = inputs[rowIndexFrontBased] || 0;
+        const cumulative = inputs.slice(0, rowIndexFrontBased + 1).reduce((a, b) => a + b, 0);
+        const high = cumulative;
+        const low = cumulative - rowCount + 1;
+        if (rowIndexFrontBased === 0) return low + j;
+        return high - j;
+      }
+      for (let r = inputs.length - 1; r >= 0; r--) {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'slots-row';
+        const isFront = (r === 0);
+        for (let j = 0; j < inputs[r]; j++) {
+          const d = document.createElement('div');
+          d.className = 'slot';
+          if (isFront && cIdx.includes(j)) d.classList.add('is-center');
+          const badge = badgeFor(r, j);
+          d.dataset.index = badge;
+          d.innerHTML = `<div class="slot-badge">${badge}</div><div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div><div class="slot-name">-</div>`;
+          d.onclick = () => openMemberModal(d);
+          rowDiv.appendChild(d);
+        }
+        rowsWrap.appendChild(rowDiv);
+      }
+      slotsWrap.appendChild(rowsWrap);
+      $('step-1').style.display = 'none';
+      $('step-2').style.display = 'block';
+    }
+
+    function openMemberModal(el) {
+      activeSlot = el;
+      $('member-select-modal').style.display = 'flex';
+      $('member-search').value = '';
+      if ($('member-filter-team')) $('member-filter-team').value = '';
+      if ($('member-filter-gen')) $('member-filter-gen').value = '';
+      renderMemberSelectionList('');
+    }
+
+    function closeMemberModal() {
+      $('member-select-modal').style.display = 'none';
+      activeSlot = null;
+    }
+
+    function selectMember(m) {
+      if (!activeSlot) return;
+      activeSlot.querySelector('.slot-circle').innerHTML = `<img src="${m.photo}">`;
+      const genTxt = formatGen(m.gen);
+      activeSlot.querySelector('.slot-name').innerText = genTxt ? `${m.name} • ${genTxt}` : m.name;
+      activeSlot.dataset.id = m.id;
+      activeSlot.dataset.name = m.name;
+      activeSlot.dataset.gen = String(m.gen ?? ''); 
+      closeMemberModal();
+      renderMemberSelectionList();
+    }
+
+    function clearSlot() {
+      if (activeSlot) {
+        activeSlot.querySelector('.slot-circle').innerHTML = '<i class="fas fa-plus" style="color:#ddd"></i>';
+        activeSlot.querySelector('.slot-name').innerText = '-';
+        delete activeSlot.dataset.id;
+        delete activeSlot.dataset.name;
+        delete activeSlot.dataset.gen;
+      }
+      closeMemberModal();
+      renderMemberSelectionList();
+    }
+
+    async function captureFormation() {
+      const target = $('slots');
+      [...target.querySelectorAll('img')].forEach(img => {
+        try {
+          img.crossOrigin = 'anonymous';
+          img.referrerPolicy = 'no-referrer';
+        } catch (e) {}
+      });
+      function showPreview(imgDataUrl) {
+        let preview = document.getElementById('print-preview');
+        if (!preview) {
+          preview = document.createElement('div');
+          preview.id = 'print-preview';
+          preview.style.cssText = `margin-top:16px; background:#fff; border:1px solid #eee; border-radius:12px; padding:12px; text-align:center;`;
+          preview.innerHTML = `<div style="font-weight:900; margin-bottom:10px; color:#333;">Preview do Print</div><img id="print-preview-img" style="width:100%; max-width:900px; border-radius:12px; display:block; margin:0 auto;"><button id="btn-download-print" class="btn-main" style="margin-top:12px; background:#333;">Baixar PNG</button>`;
+          target.parentElement.appendChild(preview);
+        }
+        document.getElementById('print-preview-img').src = imgDataUrl;
+        document.getElementById('btn-download-print').onclick = () => {
+          const a = document.createElement('a');
+          a.href = imgDataUrl;
+          a.download = 'formacao.png';
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+        };
+      }
+      async function tryRender(opts) {
+        const canvas = await html2canvas(target, opts);
+        const img = canvas.toDataURL("image/png");
+        return img;
+      }
+      try {
+        const img = await tryRender({ backgroundColor: "#fafafa", scale: 2, useCORS: true, allowTaint: false, logging: false, imageTimeout: 15000 });
+        showPreview(img);
+        return;
+      } catch (e1) {
+        console.warn("Print com CORS falhou:", e1);
+      }
+      try {
+        const img = await tryRender({ backgroundColor: "#fafafa", scale: 2, useCORS: false, allowTaint: true, logging: false, imageTimeout: 15000 });
+        showPreview(img);
+        return;
+      } catch (e2) {
+        console.error("Print sem CORS falhou:", e2);
+        alert("Não deu pra gerar o PNG. Tente printar a tela.");
+      }
+    }
+
+    function finishTrack() {
+      const name = val('b-song').trim();
+      if (!name) { alert("Nome?"); return; }
+      const kind = val('b-kind');
+      const uName = val('b-unit-name');
+      const slots = [...document.querySelectorAll('.slot')].filter(s => s.dataset.id);
+      if (!slots.length) { alert("Selecione membros."); return; }
+      const members = slots.map(s => ({
+        id: s.dataset.id,
+        name: s.dataset.name,
+        gen: s.dataset.gen || '',
+        isCenter: s.classList.contains('is-center')
+      }));
+      tracksBuffer.push({ name, kind, unitName: uName, members, html: null });
+      updateTracks(builderIsEditMode);
+      closeBuilder(true);
+    }
+
+    function removeTrack(i, isEdit) {
+      tracksBuffer.splice(i, 1);
+      updateTracks(isEdit);
+    }
+
+    function updateTracks(isEdit) {
+      const c = $(isEdit ? 'ed-tracks-list' : 'tracks-list');
+      c.innerHTML = tracksBuffer.length ? '' : '<div style="text-align:center;color:#999;font-size:.85rem;">Vazio</div>';
+      tracksBuffer.forEach((t, i) => {
+        const centerNames = (t.members || []).filter(m => m.isCenter).map(m => m.name).join(' & ');
+        // Renderiza os botões de ação:
+        c.innerHTML += `
+          <div class="track-item">
+            <div class="track-info">
+              <b>${t.name}</b> <span class="badge">${t.kind}</span>
+              ${centerNames ? `<div class="track-center-badge">Center: ${centerNames}</div>` : ''}
+            </div>
+            <div class="track-actions">
+               <button class="btn-icon" onclick="moveTrack(${i}, -1, ${isEdit})" ${i === 0 ? 'disabled' : ''}><i class="fas fa-arrow-up"></i></button>
+               <button class="btn-icon" onclick="moveTrack(${i}, 1, ${isEdit})" ${i === tracksBuffer.length - 1 ? 'disabled' : ''}><i class="fas fa-arrow-down"></i></button>
+               <button class="btn-icon delete" onclick="removeTrack(${i}, ${isEdit})"><i class="fas fa-times"></i></button>
+            </div>
+          </div>
+        `;
+      });
+    }
+
+    // === PARTICIPAÇÕES (EDITOR VISUAL) ===
+    let partEditorData = [];
+    function parsePartsSafe(text) { try { const x = JSON.parse(text || '[]'); return Array.isArray(x) ? x : []; } catch (e) { return []; } }
+    function normalizeParts(parts) { return (parts || []).map(p => ({ discoId: p.discoId || null, single: p.single || p.Single || p.title || '(Sem single)', tracks: Array.isArray(p.tracks) ? p.tracks.map(t => ({ title: t.title || t.name || '(Sem música)', labels: Array.isArray(t.labels) ? t.labels : [], unitName: t.unitName || '' })) : [] })); }
+    function openPartEditor() { partEditorData = normalizeParts(parsePartsSafe(val('e-part'))); $('part-editor-modal').style.display = 'flex'; $('part-search').value = ''; renderPartEditor(); }
+    function closePartEditor() { $('part-editor-modal').style.display = 'none'; }
+    function copyPartsToTextarea() { $('e-part').value = JSON.stringify(partEditorData, null, 0); }
+    function removeAllParticipations() { if (!confirm("Remover TODAS as participações desse membro?")) return; partEditorData = []; renderPartEditor(); }
+    function purgeLegacyParticipations(fromModal = false) { if (!confirm("Remover participações antigas (sem discoId)?")) return; if (!fromModal) partEditorData = normalizeParts(parsePartsSafe(val('e-part'))); const before = partEditorData.length; partEditorData = partEditorData.filter(p => !!p.discoId); const removed = before - partEditorData.length; renderPartEditor(); copyPartsToTextarea(); alert(`Removidas: ${removed}`); }
+    function removePartEntry(idx) { const p = partEditorData[idx]; if (!p) return; if (!confirm(`Remover o single "${p.single}" inteiro?`)) return; partEditorData.splice(idx, 1); renderPartEditor(); }
+    function removeTrackFromEntry(entryIdx, trackIdx) { const entry = partEditorData[entryIdx]; if (!entry) return; const tr = entry.tracks?.[trackIdx]; if (!tr) return; if (!confirm(`Remover a música "${tr.title}" desse single?`)) return; entry.tracks.splice(trackIdx, 1); if (!entry.tracks.length) partEditorData.splice(entryIdx, 1); renderPartEditor(); }
+    function renderPartEditor() { const box = $('part-editor-list'); if (!box) return; const q = ($('part-search')?.value || '').trim().toLowerCase(); const filtered = partEditorData.map((p, idx) => ({ p, idx })).filter(({ p }) => { if (!q) return true; const inSingle = String(p.single || '').toLowerCase().includes(q); const inTracks = (p.tracks || []).some(t => String(t.title || '').toLowerCase().includes(q)); return inSingle || inTracks; }); if (!filtered.length) { box.innerHTML = `<div style="color:#777; font-weight:900; text-align:center; padding:12px;">Nada encontrado</div>`; return; } box.innerHTML = filtered.map(({ p, idx }) => { const discoTxt = p.discoId ? `discoId: ${p.discoId}` : `SEM discoId (antigo)`; const trackHtml = (p.tracks || []).map((t, tIdx) => { const labels = (t.labels || []).join(', '); const unit = (t.unitName || '').trim(); const meta = [labels, unit ? `unit: ${unit}` : ''].filter(Boolean).join(' • '); return `<div class="part-track"><div><b>${t.title}</b><small>${meta || '—'}</small></div><button class="part-btn part-btn-soft" onclick="removeTrackFromEntry(${idx}, ${tIdx})">Remover</button></div>`; }).join(''); return `<div class="part-card"><div class="part-top"><div><div class="part-title">${p.single}</div><div class="part-meta">${discoTxt} • tracks: ${(p.tracks || []).length}</div></div><div class="part-actions"><button class="part-btn part-btn-danger" onclick="removePartEntry(${idx})">Apagar single</button></div></div><div class="part-tracks">${trackHtml || `<div style="color:#777; font-weight:900; text-align:center; padding:8px;">Sem tracks</div>`}</div></div>`; }).join(''); }
 
     loadMembers();
     loadDiscos();
