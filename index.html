@@ -455,7 +455,7 @@
           <label>Nome</label><input id="e-name" required />
           <div style="display:flex; gap:10px;">
             <div style="flex:1"><label>Time</label><select id="e-team" class="team-select">
-                 </select></div>
+                  </select></div>
             <div style="flex:1"><label>Geração (Nº)</label><input type="number" id="e-gen" required /></div>
           </div>
           <label>Status</label><select id="e-status-select">
@@ -559,7 +559,7 @@
       </div>
       <div style="display:flex; gap:10px; margin-bottom:10px;">
         <select id="member-filter-team" class="team-select" onchange="renderMemberSelectionList()" style="flex:1;">
-             </select>
+              </select>
         <select id="member-filter-gen" onchange="renderMemberSelectionList()" style="flex:1;">
           <option value="">Gens</option>
           <option>1</option>
@@ -1360,24 +1360,68 @@
     }
     function updateRowsSum() { const s=[...document.querySelectorAll('.row-count-input')].reduce((a,b)=>a+(parseInt(b.value)||0),0); $('rows-sum').innerText=s; $('rows-sum').style.color=(s===(parseInt(val('b-total'))||0))?'#00b894':'#e91e63'; }
     function toggleKindRules() { const k=val('b-kind'); $('unit-fields').style.display=(k==='Unit')?'block':'none'; if(k==='Solo'){ $('b-total').value=1; $('b-centers').value=1; $('b-rowcount').value=1; renderRowInputs(); document.querySelector('.row-count-input').value=1; syncRowsUI(); } }
+    
+    // --- CORREÇÃO AQUI (startStage) ---
     function startStage() {
-        const t=parseInt(val('b-total'))||0, inps=[...document.querySelectorAll('.row-count-input')].map(i=>parseInt(i.value)||0);
-        if(inps.reduce((a,b)=>a+b,0)!==t) return alert("Soma incorreta.");
-        const c=parseInt(val('b-centers'))||0, f=inps[0]||0; let ci=[];
-        if(c>0&&f>0) { const s=Math.floor((f-c)/2); for(let k=0;k<c;k++) ci.push(s+k); }
-        $('slots').innerHTML=''; const rw=document.createElement('div'); rw.className='rows-wrap';
-        function bf(r,j){ const rc=inps[r]||0, cum=inps.slice(0,r+1).reduce((a,b)=>a+b,0); return (r===0)?(cum-rc+1)+j:cum-j; }
-        for(let r=inps.length-1;r>=0;r--){
-            const rd=document.createElement('div'); rw.className='slots-row'; const isf=(r===0);
-            for(let j=0;j<inps[r];j++){
-                const d=document.createElement('div'); d.className='slot'; if(isf&&ci.includes(j)) d.classList.add('is-center');
-                d.innerHTML=`<div class="slot-badge">${bf(r,j)}</div><div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div><div class="slot-name">-</div>`;
-                d.onclick=()=>openMemberModal(d); rd.appendChild(d);
+        const t = parseInt(val('b-total')) || 0;
+        const inps = [...document.querySelectorAll('.row-count-input')].map(i => parseInt(i.value) || 0);
+        
+        if (inps.reduce((a, b) => a + b, 0) !== t) return alert("Soma incorreta.");
+
+        const c = parseInt(val('b-centers')) || 0;
+        const f = inps[0] || 0; 
+        let ci = [];
+        
+        // Cálculo de quem é center na primeira fileira
+        if (c > 0 && f > 0) { 
+            const s = Math.floor((f - c) / 2); 
+            for (let k = 0; k < c; k++) ci.push(s + k); 
+        }
+
+        $('slots').innerHTML = ''; 
+        
+        const rw = document.createElement('div'); 
+        rw.className = 'rows-wrap'; 
+
+        // LOOP INVERTIDO: Desenha do Fundo (Topo) para a Frente (Baixo)
+        for (let r = inps.length - 1; r >= 0; r--) {
+            const rd = document.createElement('div');
+            rd.className = 'slots-row'; 
+
+            const isFront = (r === 0);
+
+            // Calcula o número inicial desta fileira
+            // Soma quantos slots existem nas fileiras anteriores (0 até r-1)
+            let startBadge = 1;
+            for(let k = 0; k < r; k++) {
+                startBadge += inps[k];
             }
+
+            for (let j = 0; j < inps[r]; j++) {
+                const d = document.createElement('div');
+                d.className = 'slot';
+                
+                // Se for a fileira 0 (Frente) e o índice for center, marca
+                if (isFront && ci.includes(j)) d.classList.add('is-center');
+
+                d.innerHTML = `
+                    <div class="slot-badge">${startBadge + j}</div>
+                    <div class="slot-circle"><i class="fas fa-plus" style="color:#ddd"></i></div>
+                    <div class="slot-name">-</div>
+                `;
+
+                d.onclick = () => openMemberModal(d);
+                rd.appendChild(d);
+            }
+            
             rw.appendChild(rd);
         }
-        $('slots').appendChild(rw); $('step-1').style.display='none'; $('step-2').style.display='block';
+
+        $('slots').appendChild(rw); 
+        $('step-1').style.display = 'none'; 
+        $('step-2').style.display = 'block';
     }
+
     function openMemberModal(el) { activeSlot=el; $('member-select-modal').style.display='flex'; $('member-search').value=''; renderMemberSelectionList(''); }
     function closeMemberModal() { $('member-select-modal').style.display='none'; activeSlot=null; }
     function selectMember(m) { if(!activeSlot)return; const p=resolveImage(m.photo)||'https://placehold.co/100?text=?'; activeSlot.querySelector('.slot-circle').innerHTML=`<img src="${p}" onerror="this.src='https://placehold.co/100?text=?'">`; activeSlot.querySelector('.slot-name').innerText=m.name; activeSlot.dataset.id=m.id; activeSlot.dataset.name=m.name; activeSlot.dataset.gen=m.gen||''; closeMemberModal(); }
