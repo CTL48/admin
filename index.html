@@ -321,7 +321,20 @@
 
     let allMembers=[], allDiscos=[], allNews=[], activeSlot=null, tracksBuffer=[], builderIsEditMode=false, currentEditingDiscoId=null, currentEditingNewsId=null;
 
-    // === DEFINIÇÃO DA FUNÇÃO INIT (CORREÇÃO DO ERRO) ===
+    // === HELPERS DE CONVERSÃO (NOVOS) ===
+    function safeJsonParse(text) {
+      const t = (text || "").trim();
+      if (!t) return null;
+      try { return JSON.parse(t); }
+      catch (e) { alert("ERRO: O JSON em 'Participações' é inválido."); throw e; }
+    }
+    
+    function parseGallery(text) {
+      // Divide por nova linha e remove espaços vazios
+      return (text || "").split("\n").map(s => s.trim()).filter(Boolean);
+    }
+
+    // INIT
     async function init() {
         showLoading(true);
         populateTeamSelects();
@@ -331,7 +344,7 @@
         showLoading(false);
     }
 
-    // HELPERS
+    // HELPERS GERAIS
     function $(id) { return document.getElementById(id); }
     function val(id) { const el=$(id); return el?el.value:""; }
     function showLoading(show) { $('loading-overlay').style.display = show ? 'flex' : 'none'; }
@@ -340,7 +353,6 @@
     
     function populateTeamSelects() { 
         document.querySelectorAll('.team-select').forEach(s=>{ 
-            // Opção vazia
             const emptyLabel = (s.id==='b-auto-team') ? 'Nenhum (Manual)' : 'Selecione...';
             s.innerHTML = `<option value="">${emptyLabel}</option>`; 
             for(let k in TEAM_CONFIG) s.innerHTML+=`<option value="${TEAM_CONFIG[k]}">${TEAM_CONFIG[k]}</option>`; 
@@ -372,18 +384,70 @@
       } catch(e) { $(statusId).innerText="❌ Erro"; }
     }
 
-    // ACTIONS: MEMBERS
+    // ACTIONS: MEMBERS (CORRIGIDO)
     async function saveMember(e) { e.preventDefault(); showLoading(true);
         const d={Nome:$('m-name').value, Time:$('m-team').value, Geracao:$('m-gen').value+'ª Geração', Status:$('m-status-select').value, Perfil:$('m-bio').value, Foto:$('m-photo').value};
         await _supabase.from(T_MEMBERS).insert(d); await loadMembers(); $('m-name').value=''; alert("Salvo!"); showLoading(false);
     }
-    async function updateMember(e) { e.preventDefault(); showLoading(true);
-        const id=$('manage-selector').value; const d={Nome:$('e-name').value, Time:$('e-team').value, Geracao:$('e-gen').value+'ª Geração', Status:$('e-status-select').value, Perfil:$('e-bio').value, Foto:$('e-photo').value};
-        await _supabase.from(T_MEMBERS).update(d).eq('id',id); await loadMembers(); alert("Atualizado!"); showLoading(false);
+
+    async function updateMember(e) { 
+        e.preventDefault(); 
+        showLoading(true);
+        
+        try {
+            const id=$('manage-selector').value; 
+            
+            // Cria o objeto com os novos campos convertidos
+            const d={
+                Nome:$('e-name').value, 
+                Time:$('e-team').value, 
+                Geracao:$('e-gen').value+'ª Geração', 
+                Status:$('e-status-select').value, 
+                Perfil:$('e-bio').value, 
+                Foto:$('e-photo').value,
+                // CORREÇÃO: Envia Galeria como Array e Part. como JSON
+                Galeria: parseGallery($('e-gallery').value),
+                Participacoes: safeJsonParse($('e-part').value)
+            };
+
+            const { error } = await _supabase.from(T_MEMBERS).update(d).eq('id',id); 
+            if(error) throw error;
+
+            await loadMembers(); 
+            alert("Atualizado com sucesso!"); 
+        } catch(err) {
+            console.error(err);
+            alert("Erro ao atualizar: " + (err.message || err));
+        } finally {
+            showLoading(false);
+        }
     }
-    // CORREÇÃO: Removido filtro de status para listar todos na edição
+
     function renderManageSelect(q='') { const s=$('manage-selector'); const ov=s.value; s.innerHTML='<option value="">Selecione...</option>'; allMembers.filter(m=>m.Nome.toLowerCase().includes(q.toLowerCase())).forEach(m=>s.innerHTML+=`<option value="${m.id}">${m.Nome}</option>`); if(ov)s.value=ov; }
-    function fillEditForm() { const id=$('manage-selector').value; const m=allMembers.find(x=>x.id==id); if(!m){$('edit-form').style.display='none';return;} $('edit-form').style.display='block'; $('e-name').value=m.Nome; $('e-team').value=m.Time; $('e-gen').value=(m.Geracao||'').replace(/\D/g,''); $('e-status-select').value=m.Status; $('e-photo').value=m.Foto; $('e-preview').src=m.Foto||'https://placehold.co/100?text=?'; $('e-bio').value=m.Perfil||''; }
+    
+    // CORRIGIDO: Carrega os dados de Galeria e Participações
+    function fillEditForm() { 
+        const id=$('manage-selector').value; 
+        const m=allMembers.find(x=>x.id==id); 
+        if(!m){$('edit-form').style.display='none';return;} 
+        
+        $('edit-form').style.display='block'; 
+        $('e-name').value=m.Nome; 
+        $('e-team').value=m.Time; 
+        $('e-gen').value=(m.Geracao||'').replace(/\D/g,''); 
+        $('e-status-select').value=m.Status; 
+        $('e-photo').value=m.Foto; 
+        $('e-preview').src=m.Foto||'https://placehold.co/100?text=?'; 
+        $('e-bio').value=m.Perfil||''; 
+
+        // Carrega Galeria (Array -> Texto separado por linhas)
+        const gal = m.Galeria || [];
+        $('e-gallery').value = Array.isArray(gal) ? gal.join("\n") : "";
+
+        // Carrega Participacoes (JSON -> Texto legível)
+        const part = m.Participacoes;
+        $('e-part').value = part ? JSON.stringify(part, null, 2) : "";
+    }
 
     // ACTIONS: NEWS
     async function saveNews(e) { e.preventDefault(); showLoading(true);
@@ -427,16 +491,14 @@
         let ci=[], membersToFill=[];
         if(c>0&&inps[0]>0) { const s=Math.floor((inps[0]-c)/2); for(let k=0;k<c;k++) ci.push(s+k); }
         
-        // Auto-Fill Logic: Filters active members of selected team
+        // Auto-Fill Logic
         if(autoTeam) membersToFill=allMembers.filter(m=>m.Time===autoTeam && ['Ativa'].includes(m.Status));
         let fillIdx=0;
 
         $('slots').innerHTML=''; const rw=document.createElement('div'); rw.className='rows-wrap';
         
-        // Loop invertido para visualização correta (fundo no topo)
         for(let r=inps.length-1;r>=0;r--){
             const rd=document.createElement('div'); rd.className='slots-row'; const isF=(r===0);
-            // Numeração: calcula o offset
             let startB=1; for(let k=0;k<r;k++) startB+=inps[k];
             
             for(let j=0;j<inps[r];j++){
@@ -470,7 +532,6 @@
     }
     function updateTracks(isEdit) { const c=$(isEdit?'ed-tracks-list':'tracks-list'); c.innerHTML=tracksBuffer.map((t,i)=>`<div class="track-item"><div class="track-info"><b>${t.name}</b> <span class="badge">${t.kind}</span></div><div class="track-actions"><button type="button" class="btn-icon delete" onclick="tracksBuffer.splice(${i},1);updateTracks(${isEdit})">✕</button></div></div>`).join('') || '<div style="text-align:center;color:#999;">Vazio</div>'; }
     
-    // CORREÇÃO CRÍTICA AQUI: Filtro removido para listar TODOS na seleção manual
     function renderMemberSelectionList(q='') { 
         const gl=$('selection-list'); gl.innerHTML=''; 
         allMembers.filter(m => (!q || m.Nome.toLowerCase().includes(q.toLowerCase()))).forEach(m=>{
@@ -496,7 +557,7 @@
     function normalizeKind(k){const s=(k||'').toLowerCase(); return s.includes('a-side')?'a-side':s.includes('under')?'undergirls':s.includes('unit')?'unit':'b-side';}
     function parseHTMLToTracks(h){const d=document.createElement('div');d.innerHTML=h;const e=d.querySelector('#ctl48-formation-data');return e?JSON.parse(e.innerText):[];}
 
-    // Chamada correta no final
+    // Call Init
     init();
   </script>
 </body>
