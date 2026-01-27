@@ -254,8 +254,8 @@
           </div>
           <div id="e-upload-status" class="upload-status"></div>
           <label>Biografia</label><textarea id="e-bio" rows="5"></textarea>
-          <label>Galeria (URLs)</label><textarea id="e-gallery" rows="5" placeholder="https://..."></textarea>
-          <label>Participações (JSON)</label><textarea id="e-part" rows="3"></textarea>
+          <label>Galeria (URLs - uma por linha)</label><textarea id="e-gallery" rows="5" placeholder="https://..."></textarea>
+          <label>Participações (JSON ou Texto Simples)</label><textarea id="e-part" rows="3" placeholder='["Show A", "Show B"] ou apenas texto'></textarea>
           <button class="btn-main" style="background:#2196f3; color:#fff; border-color:#2196f3;">Salvar Alterações</button>
         </form>
       </div>
@@ -321,16 +321,16 @@
 
     let allMembers=[], allDiscos=[], allNews=[], activeSlot=null, tracksBuffer=[], builderIsEditMode=false, currentEditingDiscoId=null, currentEditingNewsId=null;
 
-    // === HELPERS DE CONVERSÃO (NOVOS) ===
+    // === HELPERS DE DADOS ===
+
     function safeJsonParse(text) {
       const t = (text || "").trim();
-      if (!t) return null;
-      try { return JSON.parse(t); }
-      catch (e) { alert("ERRO: O JSON em 'Participações' é inválido."); throw e; }
+      if (!t) return []; 
+      try { return JSON.parse(t); } 
+      catch (e) { return [t]; } 
     }
     
     function parseGallery(text) {
-      // Divide por nova linha e remove espaços vazios
       return (text || "").split("\n").map(s => s.trim()).filter(Boolean);
     }
 
@@ -344,7 +344,7 @@
         showLoading(false);
     }
 
-    // HELPERS GERAIS
+    // HELPERS UI
     function $(id) { return document.getElementById(id); }
     function val(id) { const el=$(id); return el?el.value:""; }
     function showLoading(show) { $('loading-overlay').style.display = show ? 'flex' : 'none'; }
@@ -384,7 +384,7 @@
       } catch(e) { $(statusId).innerText="❌ Erro"; }
     }
 
-    // ACTIONS: MEMBERS (CORRIGIDO)
+    // ACTIONS: MEMBERS
     async function saveMember(e) { e.preventDefault(); showLoading(true);
         const d={Nome:$('m-name').value, Time:$('m-team').value, Geracao:$('m-gen').value+'ª Geração', Status:$('m-status-select').value, Perfil:$('m-bio').value, Foto:$('m-photo').value};
         await _supabase.from(T_MEMBERS).insert(d); await loadMembers(); $('m-name').value=''; alert("Salvo!"); showLoading(false);
@@ -397,7 +397,7 @@
         try {
             const id=$('manage-selector').value; 
             
-            // Cria o objeto com os novos campos convertidos
+            // Dados para membros
             const d={
                 Nome:$('e-name').value, 
                 Time:$('e-team').value, 
@@ -405,7 +405,6 @@
                 Status:$('e-status-select').value, 
                 Perfil:$('e-bio').value, 
                 Foto:$('e-photo').value,
-                // CORREÇÃO: Envia Galeria como Array e Part. como JSON
                 Galeria: parseGallery($('e-gallery').value),
                 Participacoes: safeJsonParse($('e-part').value)
             };
@@ -425,7 +424,6 @@
 
     function renderManageSelect(q='') { const s=$('manage-selector'); const ov=s.value; s.innerHTML='<option value="">Selecione...</option>'; allMembers.filter(m=>m.Nome.toLowerCase().includes(q.toLowerCase())).forEach(m=>s.innerHTML+=`<option value="${m.id}">${m.Nome}</option>`); if(ov)s.value=ov; }
     
-    // CORRIGIDO: Carrega os dados de Galeria e Participações
     function fillEditForm() { 
         const id=$('manage-selector').value; 
         const m=allMembers.find(x=>x.id==id); 
@@ -440,11 +438,9 @@
         $('e-preview').src=m.Foto||'https://placehold.co/100?text=?'; 
         $('e-bio').value=m.Perfil||''; 
 
-        // Carrega Galeria (Array -> Texto separado por linhas)
         const gal = m.Galeria || [];
         $('e-gallery').value = Array.isArray(gal) ? gal.join("\n") : "";
 
-        // Carrega Participacoes (JSON -> Texto legível)
         const part = m.Participacoes;
         $('e-part').value = part ? JSON.stringify(part, null, 2) : "";
     }
@@ -461,18 +457,120 @@
     }
     async function deleteNews() { if(!confirm("Deletar?"))return; showLoading(true); await _supabase.from(T_NEWS).delete().eq('id',currentEditingNewsId); await loadNews(); $('news-edit-form').style.display='none'; alert("Deletado!"); showLoading(false); }
 
-    // ACTIONS: DISCO
+    // === LÓGICA DE SINCRONIZAÇÃO MEMBROS/DISCO ===
+    
+    async function syncMemberParticipations(discoTitle, tracks) {
+        // Varre todas as faixas e identifica quais membros participaram
+        const involvedMembers = {}; 
+
+        tracks.forEach(track => {
+            if(track.members && Array.isArray(track.members)){
+                track.members.forEach(m => {
+                    if (!involvedMembers[m.id]) {
+                        involvedMembers[m.id] = { id: m.id, newEntries: [] };
+                    }
+                    // Cria a string: "Nome do Single: Nome da Música (Tipo)"
+                    const entry = `${discoTitle}: ${track.name} (${track.kind})`;
+                    involvedMembers[m.id].newEntries.push(entry);
+                });
+            }
+        });
+
+        // Para cada membro envolvido, busca os dados atuais e adiciona o novo registro
+        const promises = Object.values(involvedMembers).map(async (item) => {
+            const member = allMembers.find(am => am.id == item.id);
+            if (!member) return;
+
+            // Pega o array atual (ou cria vazio)
+            let currentPart = member.Participacoes || [];
+            if (typeof currentPart === 'string') {
+                 try { currentPart = JSON.parse(currentPart); } catch(e) { currentPart = [currentPart]; }
+            }
+            if (!Array.isArray(currentPart)) currentPart = [];
+
+            // Adiciona se não existir
+            let changed = false;
+            item.newEntries.forEach(entry => {
+                if (!currentPart.includes(entry)) {
+                    currentPart.push(entry);
+                    changed = true;
+                }
+            });
+
+            // Só atualiza no banco se houve mudança
+            if (changed) {
+                return _supabase.from(T_MEMBERS).update({ Participacoes: currentPart }).eq('id', item.id);
+            }
+        });
+
+        await Promise.all(promises);
+    }
+
+    // ACTIONS: DISCO (AGORA COM SYNC)
     async function saveDisco(e) { e.preventDefault(); if(!tracksBuffer.length)return alert("Adicione músicas"); showLoading(true);
-        const html=buildHTML(); const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
-        await _supabase.from(T_DISCO).insert({Titulo:$('d-title').value, Tipo:$('d-type').value, Center:c, Data:$('d-date').value, Capa:$('d-cover').value, Tracklist:html});
-        await loadDiscos(); $('d-title').value=''; tracksBuffer=[]; updateTracks(false); alert("Salvo!"); showLoading(false);
+        const html=buildHTML(); 
+        const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
+        const title = $('d-title').value;
+
+        // Salva Discografia
+        await _supabase.from(T_DISCO).insert({
+            Titulo: title, 
+            Tipo:$('d-type').value, 
+            Center:c, 
+            Data:$('d-date').value, 
+            Capa:$('d-cover').value, 
+            Tracklist:html,
+            Participacoes: tracksBuffer // Salva JSON na discografia tbm
+        });
+
+        // Atualiza Membros
+        await syncMemberParticipations(title, tracksBuffer);
+        
+        await loadDiscos(); await loadMembers(); // Recarrega para garantir
+        $('d-title').value=''; tracksBuffer=[]; updateTracks(false); 
+        alert("Disco Salvo e Participações dos Membros Atualizadas!"); 
+        showLoading(false);
     }
-    function fillDiscoEditForm() { const id=$('disco-selector').value; const r=allDiscos.find(x=>x.id==id); if(!r){$('disco-edit-form').style.display='none';return;} currentEditingDiscoId=id; $('disco-edit-form').style.display='block'; $('ed-title').value=r.fields.Titulo; $('ed-type').value=r.fields.Tipo; $('ed-date').value=r.fields.Data; $('ed-center').value=r.fields.Center; $('ed-cover').value=r.fields.Capa; tracksBuffer=parseHTMLToTracks(r.fields.Tracklist||''); updateTracks(true); }
+
+    function fillDiscoEditForm() { 
+        const id=$('disco-selector').value; 
+        const r=allDiscos.find(x=>x.id==id); 
+        if(!r){$('disco-edit-form').style.display='none';return;} 
+        currentEditingDiscoId=id; 
+        
+        $('disco-edit-form').style.display='block'; 
+        $('ed-title').value=r.fields.Titulo; 
+        $('ed-type').value=r.fields.Tipo; 
+        $('ed-date').value=r.fields.Data; 
+        $('ed-center').value=r.fields.Center; 
+        $('ed-cover').value=r.fields.Capa; 
+        
+        tracksBuffer = r.fields.Participacoes || parseHTMLToTracks(r.fields.Tracklist||''); 
+        updateTracks(true); 
+    }
+
     async function updateDisco(e) { e.preventDefault(); showLoading(true);
-        const html=buildHTML(); const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
-        await _supabase.from(T_DISCO).update({Tipo:$('ed-type').value, Data:$('ed-date').value, Center:c, Capa:$('ed-cover').value, Tracklist:html}).eq('id',currentEditingDiscoId);
-        await loadDiscos(); alert("Atualizado!"); showLoading(false);
+        const html=buildHTML(); 
+        const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
+        const title = $('ed-title').value;
+        
+        await _supabase.from(T_DISCO).update({
+            Tipo:$('ed-type').value, 
+            Data:$('ed-date').value, 
+            Center:c, 
+            Capa:$('ed-cover').value, 
+            Tracklist:html,
+            Participacoes: tracksBuffer
+        }).eq('id',currentEditingDiscoId);
+        
+        // Atualiza Membros também na edição (adiciona novos se houver)
+        await syncMemberParticipations(title, tracksBuffer);
+
+        await loadDiscos(); await loadMembers(); 
+        alert("Disco Atualizado e Participações Sincronizadas!"); 
+        showLoading(false);
     }
+
     async function deleteDisco() { if(!confirm("Deletar?"))return; showLoading(true); await _supabase.from(T_DISCO).delete().eq('id',currentEditingDiscoId); await loadDiscos(); $('disco-edit-form').style.display='none'; alert("Deletado!"); showLoading(false); }
 
     // BUILDER LOGIC
