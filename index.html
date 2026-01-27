@@ -113,6 +113,7 @@
       <div class="mobile-menu-item" onclick="nav('managedisco', this)"><i class="fas fa-edit"></i> Edit Música</div>
       <div class="mobile-menu-item" onclick="nav('members', this)"><i class="fas fa-user-plus"></i> Novo Membro</div>
       <div class="mobile-menu-item" onclick="nav('manage', this)"><i class="fas fa-user-edit"></i> Editar Membro</div>
+      <div class="mobile-menu-item" onclick="nav('tools', this)"><i class="fas fa-tools"></i> Ferramentas</div>
   </div>
 
   <div id="loading-overlay">
@@ -257,11 +258,25 @@
           <label>Galeria (URLs - uma por linha)</label><textarea id="e-gallery" rows="5" placeholder="https://..."></textarea>
           <label>Participações (JSON ou Texto Simples)</label><textarea id="e-part" rows="3" placeholder='["Show A", "Show B"] ou apenas texto'></textarea>
           
-          <button type="button" class="btn-main" style="background:#ff9800; color:#fff; border-color:#ff9800; margin-top:10px;" onclick="clearParticipations()">⚠️ Limpar Histórico (Reset)</button>
-          
           <button class="btn-main" style="background:#2196f3; color:#fff; border-color:#2196f3;">Salvar Alterações</button>
         </form>
       </div>
+    </div>
+  </div>
+
+  <div id="tab-tools" class="section">
+    <div class="card" style="border: 2px solid #e91e63;">
+      <h2 style="color:#e91e63;">🔧 Ferramentas (Danger Zone)</h2>
+      <p style="font-size:0.8rem; color:#666; margin-bottom:15px;">
+        Use esta ferramenta para apagar uma música ou single que não existe mais (Órfão) do histórico de <b>TODOS</b> os membros de uma vez só.
+      </p>
+      
+      <label>Nome EXATO do Single/Álbum</label>
+      <input id="tool-target" placeholder="Ex: 10th Single" style="border-color:#e91e63;">
+      
+      <button class="btn-main" onclick="deleteGlobalParticipation()" style="background:#e91e63; color:#fff; border-color:#c2185b; margin-top:20px;">
+        🗑️ Apagar de TODOS os Membros
+      </button>
     </div>
   </div>
 
@@ -448,29 +463,6 @@
         $('e-part').value = part ? JSON.stringify(part, null, 2) : "";
     }
 
-    // === NOVA FUNÇÃO: LIMPAR PARTICIPAÇÕES ===
-    async function clearParticipations() {
-        const id = $('manage-selector').value;
-        if (!id) return;
-
-        if (!confirm("Isso vai limpar TODO o histórico de músicas deste membro. Útil se estiver com formato antigo. Continuar?")) return;
-
-        showLoading(true);
-        try {
-            // Zera o campo Participacoes
-            const { error } = await _supabase.from(T_MEMBERS).update({ Participacoes: [] }).eq('id', id);
-            if (error) throw error;
-
-            await loadMembers(); 
-            fillEditForm(); // Recarrega o formulário para mostrar vazio
-            alert("Histórico limpo!");
-        } catch (err) {
-            alert("Erro: " + err.message);
-        } finally {
-            showLoading(false);
-        }
-    }
-
     // ACTIONS: NEWS
     async function saveNews(e) { e.preventDefault(); showLoading(true);
         await _supabase.from(T_NEWS).insert({Titulo:$('n-title').value, Categoria:$('n-cat').value, Data:$('n-date').value, Texto:$('n-text').value});
@@ -483,59 +475,87 @@
     }
     async function deleteNews() { if(!confirm("Deletar?"))return; showLoading(true); await _supabase.from(T_NEWS).delete().eq('id',currentEditingNewsId); await loadNews(); $('news-edit-form').style.display='none'; alert("Deletado!"); showLoading(false); }
 
-    // === LÓGICA DE SINCRONIZAÇÃO MEMBROS/DISCO (CORRIGIDA) ===
+    // === LÓGICA DE SINCRONIZAÇÃO MEMBROS/DISCO ===
     
     async function syncMemberParticipations(discoTitle, tracksBuffer) {
-        // 1. Organiza quais membros estão em quais faixas
         const memberUpdates = {}; 
 
         tracksBuffer.forEach(track => {
             if(track.members && Array.isArray(track.members)){
                 track.members.forEach(m => {
                     if (!memberUpdates[m.id]) memberUpdates[m.id] = [];
-                    
-                    // Cria o objeto da música (Track)
-                    // Define Labels com base no tipo e se é Center
-                    const labels = [track.kind]; // Ex: "A-side"
+                    const labels = [track.kind];
                     if (m.isCenter) labels.push("Center");
-                    
-                    memberUpdates[m.id].push({
-                        title: track.name,
-                        labels: labels
-                    });
+                    memberUpdates[m.id].push({ title: track.name, labels: labels });
                 });
             }
         });
 
-        // 2. Processa cada membro
         const promises = Object.keys(memberUpdates).map(async (memberId) => {
             const member = allMembers.find(am => am.id == memberId);
             if (!member) return;
 
             const newTracks = memberUpdates[memberId];
-
-            // Lê o JSON atual do membro
             let currentPart = member.Participacoes || [];
-            if (typeof currentPart === 'string') {
-                 try { currentPart = JSON.parse(currentPart); } catch(e) { currentPart = []; }
-            }
+            if (typeof currentPart === 'string') { try { currentPart = JSON.parse(currentPart); } catch(e) { currentPart = []; } }
             if (!Array.isArray(currentPart)) currentPart = [];
 
-            // 3. Atualiza ou Adiciona o Single
-            // Primeiro, removemos a entrada antiga deste Single (se existir) para atualizar limpo
+            // Remove o antigo e adiciona o novo
             currentPart = currentPart.filter(p => p.single !== discoTitle);
+            currentPart.push({ single: discoTitle, tracks: newTracks });
 
-            // Adiciona a nova estrutura JSON completa
-            currentPart.push({
-                single: discoTitle,
-                tracks: newTracks
-            });
-
-            // 4. Salva no banco
             return _supabase.from(T_MEMBERS).update({ Participacoes: currentPart }).eq('id', memberId);
         });
 
         await Promise.all(promises);
+    }
+
+    // === NOVA FUNÇÃO GLOBAL: LIMPAR PARTICIPAÇÃO (ORPHAN CLEANER) ===
+    async function deleteGlobalParticipation() {
+        const target = $('tool-target').value.trim();
+        if(!target) return alert("Digite o nome do Single/Album para apagar.");
+        if(!confirm(`⚠️ ATENÇÃO: ISSO VAI APAGAR "${target}" DO HISTÓRICO DE TODOS OS MEMBROS!\n\nIsso é útil para remover músicas que foram excluídas (órfãs). Continuar?`)) return;
+
+        showLoading(true);
+        
+        // Pega todos os membros direto do banco para ter certeza
+        const { data: latestMembers, error } = await _supabase.from(T_MEMBERS).select('*');
+        if(error) { showLoading(false); return alert("Erro ao ler membros."); }
+
+        let count = 0;
+        
+        // Loop em todos os membros
+        for (const m of latestMembers) {
+            let parts = m.Participacoes;
+            
+            // Tratamento de segurança para parsear
+            if (!parts) parts = [];
+            if (typeof parts === 'string') {
+                try { parts = JSON.parse(parts); } catch(e) { parts = []; }
+            }
+            if (!Array.isArray(parts)) continue; // Se não for lista, pula
+
+            // Filtra: mantém apenas o que NÃO é o alvo
+            const originalLength = parts.length;
+            const newParts = parts.filter(p => {
+                // Se for objeto novo: p.single
+                // Se for texto antigo: p (string)
+                const singleName = (typeof p === 'string') ? p : (p.single || '');
+                // Compara (pode usar .includes ou ===, aqui uso === para precisão)
+                return singleName !== target; 
+            });
+
+            // Se mudou algo, atualiza no banco
+            if (newParts.length !== originalLength) {
+                await _supabase.from(T_MEMBERS).update({ Participacoes: newParts }).eq('id', m.id);
+                count++;
+            }
+        }
+
+        await loadMembers();
+        $('tool-target').value = '';
+        alert(`Concluído! O single "${target}" foi removido do histórico de ${count} membros.`);
+        showLoading(false);
     }
 
     // ACTIONS: DISCO (COM SYNC ATUALIZADO)
@@ -544,7 +564,6 @@
         const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
         const title = $('d-title').value;
 
-        // Salva Discografia
         await _supabase.from(T_DISCO).insert({
             Titulo: title, 
             Tipo:$('d-type').value, 
@@ -555,7 +574,6 @@
             Participacoes: tracksBuffer
         });
 
-        // Atualiza Membros (Agora com JSON correto)
         await syncMemberParticipations(title, tracksBuffer);
         
         await loadDiscos(); await loadMembers(); 
@@ -595,7 +613,6 @@
             Participacoes: tracksBuffer
         }).eq('id',currentEditingDiscoId);
         
-        // Atualiza Membros também na edição (JSON Correto)
         await syncMemberParticipations(title, tracksBuffer);
 
         await loadDiscos(); await loadMembers(); 
