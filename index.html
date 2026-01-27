@@ -614,28 +614,44 @@
         alert(`Removido de ${count} membros.`);
     }
 
-    // ACTIONS: DISCO (COM SYNC ATUALIZADO)
-    async function saveDisco(e) { e.preventDefault(); if(!tracksBuffer.length)return alert("Adicione músicas"); showLoading(true);
-        const html=buildHTML(); 
-        const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
-        const title = $('d-title').value;
-
-        await _supabase.from(T_DISCO).insert({
-            Titulo: title, 
-            Tipo:$('d-type').value, 
-            Center:c, 
-            Data:$('d-date').value, 
-            Capa:$('d-cover').value, 
-            Tracklist:html,
-            Participacoes: tracksBuffer
-        });
-
-        await syncMemberParticipations(title, tracksBuffer);
+    // ACTIONS: DISCO (CORRIGIDO PARA NÃO ENVIAR PARTICIPACOES)
+    async function saveDisco(e) { 
+        e.preventDefault(); 
+        if(!tracksBuffer.length) return alert("Adicione músicas"); 
         
-        await loadDiscos(); await loadMembers(); 
-        $('d-title').value=''; tracksBuffer=[]; updateTracks(false); 
-        alert("Disco Salvo e Participações JSON Atualizadas!"); 
-        showLoading(false);
+        showLoading(true);
+        
+        const html = buildHTML(); 
+        const c = tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
+        const title = $('d-title').value;
+        const dateVal = $('d-date').value || null;
+
+        try {
+            const { error } = await _supabase.from(T_DISCO).insert({
+                Titulo: title, 
+                Tipo: $('d-type').value, 
+                Center: c, 
+                Data: dateVal, 
+                Capa: $('d-cover').value, 
+                Tracklist: html
+                // REMOVIDO: Participacoes: tracksBuffer
+            });
+
+            if (error) {
+                console.error(error);
+                throw new Error("Erro ao salvar no banco. Detalhes: " + error.message);
+            }
+
+            await syncMemberParticipations(title, tracksBuffer);
+            
+            await loadDiscos(); await loadMembers(); 
+            $('d-title').value=''; tracksBuffer=[]; updateTracks(false); 
+            alert("Disco Salvo e Participações JSON Atualizadas!"); 
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            showLoading(false);
+        }
     }
 
     function fillDiscoEditForm() { 
@@ -651,29 +667,40 @@
         $('ed-center').value=r.fields.Center; 
         $('ed-cover').value=r.fields.Capa; 
         
-        tracksBuffer = r.fields.Participacoes || parseHTMLToTracks(r.fields.Tracklist||''); 
+        tracksBuffer = parseHTMLToTracks(r.fields.Tracklist||''); 
         updateTracks(true); 
     }
 
-    async function updateDisco(e) { e.preventDefault(); showLoading(true);
+    async function updateDisco(e) { 
+        e.preventDefault(); 
+        showLoading(true);
+        
         const html=buildHTML(); 
         const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
         const title = $('ed-title').value;
-        
-        await _supabase.from(T_DISCO).update({
-            Tipo:$('ed-type').value, 
-            Data:$('ed-date').value, 
-            Center:c, 
-            Capa:$('ed-cover').value, 
-            Tracklist:html,
-            Participacoes: tracksBuffer
-        }).eq('id',currentEditingDiscoId);
-        
-        await syncMemberParticipations(title, tracksBuffer);
+        const dateVal = $('ed-date').value || null;
 
-        await loadDiscos(); await loadMembers(); 
-        alert("Disco Atualizado e Participações Sincronizadas!"); 
-        showLoading(false);
+        try {
+            const { error } = await _supabase.from(T_DISCO).update({
+                Tipo: $('ed-type').value, 
+                Data: dateVal, 
+                Center: c, 
+                Capa: $('ed-cover').value, 
+                Tracklist: html
+                // REMOVIDO: Participacoes: tracksBuffer
+            }).eq('id', currentEditingDiscoId);
+
+            if (error) throw error;
+            
+            await syncMemberParticipations(title, tracksBuffer);
+
+            await loadDiscos(); await loadMembers(); 
+            alert("Disco Atualizado e Participações Sincronizadas!"); 
+        } catch (err) {
+            alert("Erro: " + err.message);
+        } finally {
+            showLoading(false);
+        }
     }
 
     async function deleteDisco() { if(!confirm("Deletar?"))return; showLoading(true); await _supabase.from(T_DISCO).delete().eq('id',currentEditingDiscoId); await loadDiscos(); $('disco-edit-form').style.display='none'; alert("Deletado!"); showLoading(false); }
