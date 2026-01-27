@@ -457,56 +457,62 @@
     }
     async function deleteNews() { if(!confirm("Deletar?"))return; showLoading(true); await _supabase.from(T_NEWS).delete().eq('id',currentEditingNewsId); await loadNews(); $('news-edit-form').style.display='none'; alert("Deletado!"); showLoading(false); }
 
-    // === LÓGICA DE SINCRONIZAÇÃO MEMBROS/DISCO ===
+    // === LÓGICA DE SINCRONIZAÇÃO MEMBROS/DISCO (CORRIGIDA) ===
     
-    async function syncMemberParticipations(discoTitle, tracks) {
-        // Varre todas as faixas e identifica quais membros participaram
-        const involvedMembers = {}; 
+    async function syncMemberParticipations(discoTitle, tracksBuffer) {
+        // 1. Organiza quais membros estão em quais faixas
+        const memberUpdates = {}; 
 
-        tracks.forEach(track => {
+        tracksBuffer.forEach(track => {
             if(track.members && Array.isArray(track.members)){
                 track.members.forEach(m => {
-                    if (!involvedMembers[m.id]) {
-                        involvedMembers[m.id] = { id: m.id, newEntries: [] };
-                    }
-                    // Cria a string: "Nome do Single: Nome da Música (Tipo)"
-                    const entry = `${discoTitle}: ${track.name} (${track.kind})`;
-                    involvedMembers[m.id].newEntries.push(entry);
+                    if (!memberUpdates[m.id]) memberUpdates[m.id] = [];
+                    
+                    // Cria o objeto da música (Track)
+                    // Define Labels com base no tipo e se é Center
+                    const labels = [track.kind]; // Ex: "A-side"
+                    if (m.isCenter) labels.push("Center");
+                    
+                    memberUpdates[m.id].push({
+                        title: track.name,
+                        labels: labels
+                    });
                 });
             }
         });
 
-        // Para cada membro envolvido, busca os dados atuais e adiciona o novo registro
-        const promises = Object.values(involvedMembers).map(async (item) => {
-            const member = allMembers.find(am => am.id == item.id);
+        // 2. Processa cada membro
+        const promises = Object.keys(memberUpdates).map(async (memberId) => {
+            const member = allMembers.find(am => am.id == memberId);
             if (!member) return;
 
-            // Pega o array atual (ou cria vazio)
+            const newTracks = memberUpdates[memberId];
+
+            // Lê o JSON atual do membro
             let currentPart = member.Participacoes || [];
             if (typeof currentPart === 'string') {
-                 try { currentPart = JSON.parse(currentPart); } catch(e) { currentPart = [currentPart]; }
+                 try { currentPart = JSON.parse(currentPart); } catch(e) { currentPart = []; }
             }
             if (!Array.isArray(currentPart)) currentPart = [];
 
-            // Adiciona se não existir
-            let changed = false;
-            item.newEntries.forEach(entry => {
-                if (!currentPart.includes(entry)) {
-                    currentPart.push(entry);
-                    changed = true;
-                }
+            // 3. Atualiza ou Adiciona o Single
+            // Primeiro, removemos a entrada antiga deste Single (se existir) para atualizar limpo
+            currentPart = currentPart.filter(p => p.single !== discoTitle);
+
+            // Adiciona a nova estrutura JSON completa
+            currentPart.push({
+                single: discoTitle,
+                tracks: newTracks
             });
 
-            // Só atualiza no banco se houve mudança
-            if (changed) {
-                return _supabase.from(T_MEMBERS).update({ Participacoes: currentPart }).eq('id', item.id);
-            }
+            // 4. Salva no banco
+            return _supabase.from(T_MEMBERS).update({ Participacoes: currentPart }).eq('id', memberId);
         });
 
         await Promise.all(promises);
     }
 
-    // ACTIONS: DISCO (AGORA COM SYNC)
+    // ACTIONS: DISCO (COM SYNC ATUALIZADO)
     async function saveDisco(e) { e.preventDefault(); if(!tracksBuffer.length)return alert("Adicione músicas"); showLoading(true);
         const html=buildHTML(); 
         const c=tracksBuffer[0]?(tracksBuffer[0].members||[]).filter(m=>m.isCenter).map(m=>m.name).join('&'):'';
@@ -520,15 +526,15 @@
             Data:$('d-date').value, 
             Capa:$('d-cover').value, 
             Tracklist:html,
-            Participacoes: tracksBuffer // Salva JSON na discografia tbm
+            Participacoes: tracksBuffer
         });
 
-        // Atualiza Membros
+        // Atualiza Membros (Agora com JSON correto)
         await syncMemberParticipations(title, tracksBuffer);
         
-        await loadDiscos(); await loadMembers(); // Recarrega para garantir
+        await loadDiscos(); await loadMembers(); 
         $('d-title').value=''; tracksBuffer=[]; updateTracks(false); 
-        alert("Disco Salvo e Participações dos Membros Atualizadas!"); 
+        alert("Disco Salvo e Participações JSON Atualizadas!"); 
         showLoading(false);
     }
 
@@ -563,7 +569,7 @@
             Participacoes: tracksBuffer
         }).eq('id',currentEditingDiscoId);
         
-        // Atualiza Membros também na edição (adiciona novos se houver)
+        // Atualiza Membros também na edição (JSON Correto)
         await syncMemberParticipations(title, tracksBuffer);
 
         await loadDiscos(); await loadMembers(); 
