@@ -256,6 +256,9 @@
           <label>Biografia</label><textarea id="e-bio" rows="5"></textarea>
           <label>Galeria (URLs - uma por linha)</label><textarea id="e-gallery" rows="5" placeholder="https://..."></textarea>
           <label>Participações (JSON ou Texto Simples)</label><textarea id="e-part" rows="3" placeholder='["Show A", "Show B"] ou apenas texto'></textarea>
+          
+          <button type="button" class="btn-main" style="background:#ff9800; color:#fff; border-color:#ff9800; margin-top:10px;" onclick="clearParticipations()">⚠️ Limpar Histórico (Reset)</button>
+          
           <button class="btn-main" style="background:#2196f3; color:#fff; border-color:#2196f3;">Salvar Alterações</button>
         </form>
       </div>
@@ -443,6 +446,29 @@
 
         const part = m.Participacoes;
         $('e-part').value = part ? JSON.stringify(part, null, 2) : "";
+    }
+
+    // === NOVA FUNÇÃO: LIMPAR PARTICIPAÇÕES ===
+    async function clearParticipations() {
+        const id = $('manage-selector').value;
+        if (!id) return;
+
+        if (!confirm("Isso vai limpar TODO o histórico de músicas deste membro. Útil se estiver com formato antigo. Continuar?")) return;
+
+        showLoading(true);
+        try {
+            // Zera o campo Participacoes
+            const { error } = await _supabase.from(T_MEMBERS).update({ Participacoes: [] }).eq('id', id);
+            if (error) throw error;
+
+            await loadMembers(); 
+            fillEditForm(); // Recarrega o formulário para mostrar vazio
+            alert("Histórico limpo!");
+        } catch (err) {
+            alert("Erro: " + err.message);
+        } finally {
+            showLoading(false);
+        }
     }
 
     // ACTIONS: NEWS
