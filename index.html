@@ -92,6 +92,13 @@
     .btn-icon.delete { color: #fff; background: #f44336; }
     .badge { font-size: .72rem; font-weight: 900; border-radius: 999px; padding: 4px 10px; background: #000; color: var(--primary); text-transform: uppercase; display: inline-block; margin-left: 6px; }
 
+    /* SCANNER TOOLS */
+    .scan-list { max-height: 400px; overflow-y: auto; margin-top: 15px; border: 1px solid #eee; border-radius: 8px; }
+    .scan-item { padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fff; font-size: 0.9rem; }
+    .scan-item:hover { background: #f9f9f9; }
+    .scan-name { font-weight: 700; color: #333; }
+    .scan-count { background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; margin-right: 10px; color: #666; font-weight: bold; }
+
     /* LOADER */
     #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, .95); z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
     .spinner { border: 5px solid #f3f3f3; border-top: 5px solid var(--primary); border-radius: 50%; width: 50px; height: 50px; animation: spin 1s linear infinite; margin-bottom: 20px; }
@@ -258,6 +265,7 @@
           <label>Galeria (URLs - uma por linha)</label><textarea id="e-gallery" rows="5" placeholder="https://..."></textarea>
           <label>Participações (JSON ou Texto Simples)</label><textarea id="e-part" rows="3" placeholder='["Show A", "Show B"] ou apenas texto'></textarea>
           
+          <button type="button" class="btn-main" style="background:#ff9800; color:#fff; border-color:#ff9800; margin-top:10px;" onclick="clearParticipations()">⚠️ Limpar Histórico (Reset)</button>
           <button class="btn-main" style="background:#2196f3; color:#fff; border-color:#2196f3;">Salvar Alterações</button>
         </form>
       </div>
@@ -265,18 +273,18 @@
   </div>
 
   <div id="tab-tools" class="section">
-    <div class="card" style="border: 2px solid #e91e63;">
-      <h2 style="color:#e91e63;">🔧 Ferramentas (Danger Zone)</h2>
+    <div class="card">
+      <h2 style="color:#e91e63;"><i class="fas fa-broom"></i> Scanner de Participações</h2>
       <p style="font-size:0.8rem; color:#666; margin-bottom:15px;">
-        Use esta ferramenta para apagar uma música ou single que não existe mais (Órfão) do histórico de <b>TODOS</b> os membros de uma vez só.
+        Esta ferramenta escaneia <b>TODOS</b> os membros, encontra todas as músicas registradas (incluindo órfãs/antigas) e permite que você apague registros específicos de uma vez só.
       </p>
       
-      <label>Nome EXATO do Single/Álbum</label>
-      <input id="tool-target" placeholder="Ex: 10th Single" style="border-color:#e91e63;">
-      
-      <button class="btn-main" onclick="deleteGlobalParticipation()" style="background:#e91e63; color:#fff; border-color:#c2185b; margin-top:20px;">
-        🗑️ Apagar de TODOS os Membros
+      <button class="btn-main" onclick="scanGlobalParticipations()" style="background:#000; color:var(--primary); border-color:#000;">
+        🔍 Escanear Músicas nos Membros
       </button>
+
+      <div id="scan-results" class="scan-list" style="display:none;">
+        </div>
     </div>
   </div>
 
@@ -326,6 +334,7 @@
     <button class="nav-item" onclick="nav('members', this)"><i class="fas fa-user-plus"></i>Add</button>
     <button class="nav-item" onclick="nav('manage', this)"><i class="fas fa-edit"></i>Edit</button>
     <button class="nav-item" onclick="nav('managedisco', this)"><i class="fas fa-folder-open"></i>Discos</button>
+    <button class="nav-item" onclick="nav('tools', this)"><i class="fas fa-tools"></i>Tools</button>
   </div>
 
   <script>
@@ -463,6 +472,20 @@
         $('e-part').value = part ? JSON.stringify(part, null, 2) : "";
     }
 
+    async function clearParticipations() {
+        const id = $('manage-selector').value;
+        if (!id) return;
+        if (!confirm("Isso vai limpar TODO o histórico de músicas deste membro. Continuar?")) return;
+        showLoading(true);
+        try {
+            const { error } = await _supabase.from(T_MEMBERS).update({ Participacoes: [] }).eq('id', id);
+            if (error) throw error;
+            await loadMembers(); 
+            fillEditForm(); 
+            alert("Histórico limpo!");
+        } catch (err) { alert("Erro: " + err.message); } finally { showLoading(false); }
+    }
+
     // ACTIONS: NEWS
     async function saveNews(e) { e.preventDefault(); showLoading(true);
         await _supabase.from(T_NEWS).insert({Titulo:$('n-title').value, Categoria:$('n-cat').value, Data:$('n-date').value, Texto:$('n-text').value});
@@ -476,10 +499,8 @@
     async function deleteNews() { if(!confirm("Deletar?"))return; showLoading(true); await _supabase.from(T_NEWS).delete().eq('id',currentEditingNewsId); await loadNews(); $('news-edit-form').style.display='none'; alert("Deletado!"); showLoading(false); }
 
     // === LÓGICA DE SINCRONIZAÇÃO MEMBROS/DISCO ===
-    
     async function syncMemberParticipations(discoTitle, tracksBuffer) {
         const memberUpdates = {}; 
-
         tracksBuffer.forEach(track => {
             if(track.members && Array.isArray(track.members)){
                 track.members.forEach(m => {
@@ -490,72 +511,107 @@
                 });
             }
         });
-
         const promises = Object.keys(memberUpdates).map(async (memberId) => {
             const member = allMembers.find(am => am.id == memberId);
             if (!member) return;
-
             const newTracks = memberUpdates[memberId];
             let currentPart = member.Participacoes || [];
             if (typeof currentPart === 'string') { try { currentPart = JSON.parse(currentPart); } catch(e) { currentPart = []; } }
             if (!Array.isArray(currentPart)) currentPart = [];
-
-            // Remove o antigo e adiciona o novo
             currentPart = currentPart.filter(p => p.single !== discoTitle);
             currentPart.push({ single: discoTitle, tracks: newTracks });
-
             return _supabase.from(T_MEMBERS).update({ Participacoes: currentPart }).eq('id', memberId);
         });
-
         await Promise.all(promises);
     }
 
-    // === NOVA FUNÇÃO GLOBAL: LIMPAR PARTICIPAÇÃO (ORPHAN CLEANER) ===
-    async function deleteGlobalParticipation() {
-        const target = $('tool-target').value.trim();
-        if(!target) return alert("Digite o nome do Single/Album para apagar.");
-        if(!confirm(`⚠️ ATENÇÃO: ISSO VAI APAGAR "${target}" DO HISTÓRICO DE TODOS OS MEMBROS!\n\nIsso é útil para remover músicas que foram excluídas (órfãs). Continuar?`)) return;
-
+    // === SCANNER VISUAL DE PARTICIPAÇÕES ===
+    async function scanGlobalParticipations() {
         showLoading(true);
         
-        // Pega todos os membros direto do banco para ter certeza
-        const { data: latestMembers, error } = await _supabase.from(T_MEMBERS).select('*');
-        if(error) { showLoading(false); return alert("Erro ao ler membros."); }
-
-        let count = 0;
+        // Stats Map: { "Single Name": count }
+        const stats = {};
         
-        // Loop em todos os membros
-        for (const m of latestMembers) {
+        // Varre todos os membros
+        allMembers.forEach(m => {
             let parts = m.Participacoes;
-            
-            // Tratamento de segurança para parsear
-            if (!parts) parts = [];
-            if (typeof parts === 'string') {
+            if(!parts) return;
+            if(typeof parts === 'string') {
                 try { parts = JSON.parse(parts); } catch(e) { parts = []; }
             }
-            if (!Array.isArray(parts)) continue; // Se não for lista, pula
+            if(Array.isArray(parts)) {
+                parts.forEach(p => {
+                    // Pega o nome do single (seja objeto novo ou string antiga)
+                    const name = (typeof p === 'string') ? p : (p.single || 'Desconhecido');
+                    if(!stats[name]) stats[name] = 0;
+                    stats[name]++;
+                });
+            }
+        });
 
-            // Filtra: mantém apenas o que NÃO é o alvo
-            const originalLength = parts.length;
+        // Renderiza a lista visual
+        const box = $('scan-results');
+        box.innerHTML = '';
+        const sortedKeys = Object.keys(stats).sort();
+        
+        if(sortedKeys.length === 0) {
+            box.innerHTML = '<div style="padding:20px;text-align:center;color:#999">Nenhuma participação encontrada.</div>';
+        } else {
+            sortedKeys.forEach(name => {
+                box.innerHTML += `
+                    <div class="scan-item">
+                        <div>
+                            <span class="scan-name">${name}</span>
+                        </div>
+                        <div style="display:flex; align-items:center;">
+                            <span class="scan-count">${stats[name]} membros</span>
+                            <button type="button" class="btn-icon delete" onclick="deleteGlobalParticipation('${name.replace(/'/g, "\\'")}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+        
+        box.style.display = 'block';
+        showLoading(false);
+    }
+
+    // === DELETAR GLOBALMENTE (VIA SCANNER) ===
+    async function deleteGlobalParticipation(target) {
+        if(!target) return;
+        if(!confirm(`⚠️ Tem certeza? Isso vai remover "${target}" do perfil de TODOS os membros.\n\nUse isso se a música/single não existir mais.`)) return;
+
+        showLoading(true);
+        let count = 0;
+        
+        const promises = allMembers.map(async (m) => {
+            let parts = m.Participacoes;
+            if(!parts) return;
+            if(typeof parts === 'string') { try { parts = JSON.parse(parts); } catch(e) { parts = []; } }
+            if(!Array.isArray(parts)) return;
+
+            const originalLen = parts.length;
+            // Filtra removendo o alvo (seja string ou objeto.single)
             const newParts = parts.filter(p => {
-                // Se for objeto novo: p.single
-                // Se for texto antigo: p (string)
-                const singleName = (typeof p === 'string') ? p : (p.single || '');
-                // Compara (pode usar .includes ou ===, aqui uso === para precisão)
-                return singleName !== target; 
+                const name = (typeof p === 'string') ? p : (p.single || '');
+                return name !== target;
             });
 
-            // Se mudou algo, atualiza no banco
-            if (newParts.length !== originalLength) {
+            if(newParts.length !== originalLen) {
                 await _supabase.from(T_MEMBERS).update({ Participacoes: newParts }).eq('id', m.id);
                 count++;
             }
-        }
+        });
 
+        await Promise.all(promises);
+        
+        // Recarrega dados e atualiza a lista visual
         await loadMembers();
-        $('tool-target').value = '';
-        alert(`Concluído! O single "${target}" foi removido do histórico de ${count} membros.`);
-        showLoading(false);
+        await scanGlobalParticipations();
+        
+        alert(`Removido de ${count} membros.`);
     }
 
     // ACTIONS: DISCO (COM SYNC ATUALIZADO)
